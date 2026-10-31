@@ -2,7 +2,7 @@
 // checkProposal() and fallback() are plain code and have the final word.
 
 export const ROLES = ['ATC', 'PILOT', 'GROUND']
-export const MAX_ROUNDS = 3
+export const MAX_ROUNDS = 2 // brief: negotiate in under 3 turns
 const STANCES = ['PROPOSE', 'ACCEPT', 'COUNTER', 'REJECT', 'ESCALATE']
 
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]))

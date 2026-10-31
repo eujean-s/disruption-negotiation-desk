@@ -1,7 +1,7 @@
 // Usage: npx vercel dev   (in another terminal, serves /api/agent on :3000)
 //        node scripts/evaluate.js [runsPerScenario=3] [baseUrl=http://localhost:3000]
 import fs from 'node:fs'
-import { runNegotiation } from '../src/negotiate.js'
+import { runNegotiation, MAX_ROUNDS } from '../src/negotiate.js'
 
 const MAX_RUNS = 5
 const n = Math.min(Math.max(parseInt(process.argv[2]) || 3, 1), MAX_RUNS)
@@ -15,6 +15,7 @@ function isCorrect(s, r) {
   return r.proposal && gt.safe_options.some((o) => o.arrival_delay_min === r.proposal.delay_min && o.gate === r.proposal.gate)
 }
 
+const avg = (a) => (a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(2) : null)
 const rows = []
 for (const s of scenarios) {
   const results = await Promise.all(Array.from({ length: n }, () => runNegotiation(s, { baseUrl })))
@@ -25,6 +26,7 @@ for (const s of scenarios) {
     runs: n,
     consensus: count('CONSENSUS'),
     checker_blocked: results.reduce((a, r) => a + r.blocked, 0),
+    avg_rounds: avg(results.filter((r) => r.outcome === 'CONSENSUS').map((r) => r.round)),
     fallback: count('FALLBACK'),
     escalate: count('ESCALATE'),
     mismatches: results.filter((r) => !isCorrect(s, r)).length,
@@ -39,6 +41,8 @@ const feasible = (r) => r.truth === 'FEASIBLE'
 const feasibleRuns = sum({ key: 'runs', where: feasible })
 console.table(rows)
 console.log(`Consensus rate (feasible S1-S5): ${sum({ key: 'consensus', where: feasible })}/${feasibleRuns}`)
+const rr = rows.map((r) => r.avg_rounds).filter((x) => x !== null)
+console.log(`Avg rounds to consensus: ${avg(rr)} (limit ${MAX_ROUNDS})`)
 console.log(`Checker-blocked proposals (all): ${sum({ key: 'checker_blocked' })}`)
 console.log(`Fallback count (all): ${sum({ key: 'fallback' })}`)
 console.log(`Correct escalations (infeasible S6-S8): ${sum({ key: 'escalate', where: (r) => !feasible(r) })}/${sum({ key: 'runs', where: (r) => !feasible(r) })}`)

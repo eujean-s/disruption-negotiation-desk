@@ -8,6 +8,7 @@ const events = ref([])
 const outcome = ref(null)
 const running = ref(false)
 const approved = ref(false)
+const approvedAt = ref(null)
 
 const scenario = computed(() => scenarios.find((s) => s.id === selectedId.value))
 
@@ -18,9 +19,36 @@ const typeBadge = {
 }
 const outcomeClass = { CONSENSUS: 'alert-success', FALLBACK: 'alert-warning', ESCALATE: 'alert-danger' }
 
+function approve() {
+  approved.value = true
+  approvedAt.value = new Date().toISOString()
+}
+
+// Traceable consensus log: every message, checker verdict, outcome and approval as JSON.
+function downloadLog() {
+  const log = {
+    scenario: scenario.value.id,
+    flight: scenario.value.flight,
+    csv_row: scenario.value.csv_row,
+    max_rounds: MAX_ROUNDS,
+    events: events.value,
+    outcome: outcome.value,
+    human_approved: approved.value,
+    approved_at: approvedAt.value,
+    exported_at: new Date().toISOString(),
+  }
+  const url = URL.createObjectURL(new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `negotiation-${scenario.value.id}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 async function run() {
   running.value = true
   approved.value = false
+  approvedAt.value = null
   events.value = []
   outcome.value = null
   const result = await runNegotiation(scenario.value, {
@@ -78,9 +106,10 @@ async function run() {
         <span v-if="outcome.outcome === 'FALLBACK'"> (rule-based: earliest slot that passes the checker)</span>
       </p>
       <p v-else class="mb-2">No option passes the checker. A human must decide.</p>
-      <button v-if="outcome.proposal" class="btn btn-success" :disabled="approved" @click="approved = true">
+      <button v-if="outcome.proposal" class="btn btn-success" :disabled="approved" @click="approve">
         {{ approved ? 'Approved by human ✓' : 'Approve' }}
       </button>
+      <button class="btn btn-outline-secondary ms-2" @click="downloadLog">Download log (JSON)</button>
     </div>
   </div>
 </template>
