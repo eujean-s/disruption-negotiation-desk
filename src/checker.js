@@ -1,0 +1,102 @@
+// Plain-code checker. No LLM here: this decides what is allowed.
+// checkProposal() validates a plan, fallback() picks a deterministic plan, FACTS builds
+// the per-role facts each agent is allowed to see.
+
+// A slot less than this many minutes behind a heavy arrival is in its wake.
+// Source: constraints workbook, wake_separation: Heavy follows Heavy = 120 s (4 NM).
+export const WAKE_SEPARATION_MIN = 2
+// Minutes before arrival that a gate must already be free so ground crew can reassign it.
+// Source: challenge2_operational_constraints.xlsx, fuel_and_crew: "Gate change notice, at least 20 minutes before arrival".
+export const GATE_CHANGE_NOTICE_MIN = 20
+
+export const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
+const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]))
+
+// Longest delay the aircraft can absorb while keeping its fuel reserve.
+export const usableHoldMin = (s) => s.fuel_on_board_min - s.min_reserve_min
+
+// Gap in minutes behind the closest heavy arrival ahead of this slot (null = no leader in its wake range).
+export function gapToLeaderMin(s, delay) {
+  const ahead = s.heavy_arrivals.map((h) => delay - h.at_delay_min).filter((g) => g >= 0)
+  return ahead.length ? Math.min(...ahead) : null
+}
+
+export const slotClearOfWake = (s, delay) => {
+  const gap = gapToLeaderMin(s, delay)
+  return gap === null || gap >= WAKE_SEPARATION_MIN
+}
+
+// Smallest delay at which this gate is free early enough for the aircraft.
+export const gateReadyDelayMin = (s, g) => g.free_from_min + GATE_CHANGE_NOTICE_MIN - s.scheduled_arrival_min
+
+const REAL_ROW_KEYS = {
+  ATC: ['ORIGIN_AIRPORT', 'DESTINATION_AIRPORT', 'SCHEDULED_ARRIVAL', 'ARRIVAL_DELAY', 'WEATHER_DELAY', 'AIR_SYSTEM_DELAY', 'TAXI_IN'],
+  PILOT: ['DISTANCE', 'SCHEDULED_TIME', 'AIR_TIME', 'DEPARTURE_DELAY', 'ARRIVAL_DELAY', 'WEATHER_DELAY', 'LATE_AIRCRAFT_DELAY'],
+  GROUND: ['AIRLINE', 'FLIGHT_NUMBER', 'TAIL_NUMBER', 'SCHEDULED_ARRIVAL', 'AIRLINE_DELAY', 'LATE_AIRCRAFT_DELAY', 'TAXI_IN'],
+}
+const base = (s) => ({ flight: s.flight, disruption: s.disruption, scheduled_arrival: s.scheduled_arrival_label })
+
+// Each agent only gets its own facts. Never pass ground_truth or the whole scenario.
+export const FACTS = {
+  ATC: (s) => ({
+    ...base(s),
+    required_gap_min: WAKE_SEPARATION_MIN,
+    slots: [...s.runway_slots_delay_min]
+      .sort((a, b) => a - b)
+      .map((delay_min) => ({ delay_min, gap_to_leader_min: gapToLeaderMin(s, delay_min), usable: slotClearOfWake(s, delay_min) })),
+    real_row: pick(s.source, REAL_ROW_KEYS.ATC),
+  }),
+  PILOT: (s) => ({
+    ...base(s),
+    usable_holding_min: usableHoldMin(s),
+    crew_shift_end: hhmm(s.crew_shift_end_min),
+    latest_delay_for_crew_min: s.crew_shift_end_min - s.scheduled_arrival_min,
+    next_connection: s.next_connection,
+    real_row: pick(s.source, REAL_ROW_KEYS.PILOT),
+  }),
+  GROUND: (s) => ({
+    ...base(s),
+    gate_change_notice_min: GATE_CHANGE_NOTICE_MIN,
+    gates: s.gates.map((g) => ({ id: g.id, free_from: hhmm(g.free_from_min), ready_at_delay_min: gateReadyDelayMin(s, g) })),
+    next_connection: s.next_connection,
+    real_row: pick(s.source, REAL_ROW_KEYS.GROUND),
+  }),
+}
+
+// Plain-code feasibility check against the full scenario.
+export function checkProposal(s, p) {
+  const violations = []
+  const delay = p && p.delay_min
+  const gate = p && s.gates.find((g) => g.id === p.gate)
+  if (!Number.isFinite(delay)) return { ok: false, violations: ['SLOT'], warnings: [] }
+  const arrival = s.scheduled_arrival_min + delay
+  if (!s.runway_slots_delay_min.includes(delay)) violations.push('SLOT')
+  if (!slotClearOfWake(s, delay)) violations.push('WAKE')
+  if (delay > usableHoldMin(s)) violations.push('FUEL')
+  if (!gate || gate.free_from_min > arrival - GATE_CHANGE_NOTICE_MIN) violations.push('GATE')
+  if (arrival > s.crew_shift_end_min) violations.push('CREW')
+  const connection = connectionStatus(s, p)
+  return { ok: violations.length === 0, violations, warnings: connection.missed ? ['CONNECTION_MISSED'] : [], connection }
+}
+
+// Soft constraint: never blocks a plan, but is shown to the agents and the human approver.
+// At gate = scheduled arrival + delay + real TAXI_IN; connection time comes from next_connection.
+export function connectionStatus(s, p) {
+  const [, h, m] = s.next_connection.match(/(\d{1,2}):(\d{2})/)
+  const departs = Number(h) * 60 + Number(m)
+  const atGate = s.scheduled_arrival_min + p.delay_min + s.source.TAXI_IN
+  return { missed: atGate > departs, at_gate: hhmm(atGate), departs: hhmm(departs) }
+}
+
+// Deterministic fallback: earliest runway slot with the earliest-free gate that passes the checker.
+export function fallback(s) {
+  const slots = [...s.runway_slots_delay_min].sort((a, b) => a - b)
+  const gates = [...s.gates].sort((a, b) => a.free_from_min - b.free_from_min)
+  for (const delay_min of slots) {
+    for (const g of gates) {
+      const p = { delay_min, gate: g.id }
+      if (checkProposal(s, p).ok) return p
+    }
+  }
+  return null
+}

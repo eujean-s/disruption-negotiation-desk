@@ -1,56 +1,18 @@
 // Three-agent negotiation (ATC / PILOT / GROUND). The LLM only talks;
 // checkProposal() and fallback() are plain code and have the final word.
 
+import { checkProposal, fallback, FACTS, usableHoldMin, connectionStatus } from './checker.js'
+
 export const ROLES = ['ATC', 'PILOT', 'GROUND']
-export const MAX_ROUNDS = 2 // brief: negotiate in under 3 turns
+export const MAX_ROUNDS = 3 // brief: one turn = one message from each agent, consensus within 3 turns
 const STANCES = ['PROPOSE', 'ACCEPT', 'COUNTER', 'REJECT', 'ESCALATE']
-// A slot less than this many minutes behind a heavy arrival is in its wake (about 5 NM on final).
-export const WAKE_SEPARATION_MIN = 2
 
-const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]))
-const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
-
-const REAL_ROW_KEYS = {
-  ATC: ['ORIGIN_AIRPORT', 'DESTINATION_AIRPORT', 'SCHEDULED_ARRIVAL', 'ARRIVAL_DELAY', 'WEATHER_DELAY', 'AIR_SYSTEM_DELAY', 'TAXI_IN'],
-  PILOT: ['DISTANCE', 'SCHEDULED_TIME', 'AIR_TIME', 'DEPARTURE_DELAY', 'ARRIVAL_DELAY', 'WEATHER_DELAY', 'LATE_AIRCRAFT_DELAY'],
-  GROUND: ['AIRLINE', 'FLIGHT_NUMBER', 'TAIL_NUMBER', 'SCHEDULED_ARRIVAL', 'AIRLINE_DELAY', 'LATE_AIRCRAFT_DELAY', 'TAXI_IN'],
-}
-
-// Each agent only gets its own facts. Never pass ground_truth or the whole scenario.
-export function factsFor(role, s) {
-  const base = { flight: s.flight, disruption: s.disruption, scheduled_arrival: s.scheduled_arrival_label }
-  const real_row = pick(s.source, REAL_ROW_KEYS[role])
-  if (role === 'ATC') {
-    return {
-      ...base,
-      runway_slots_delay_min: s.runway_slots_delay_min,
-      heavy_arrivals: s.heavy_arrivals,
-      wake_separation_min: WAKE_SEPARATION_MIN,
-      real_row,
-    }
-  }
-  if (role === 'PILOT') {
-    return {
-      ...base,
-      fuel_on_board_min: s.fuel_on_board_min,
-      min_reserve_min: s.min_reserve_min,
-      crew_shift_end: hhmm(s.crew_shift_end_min),
-      next_connection: s.next_connection,
-      real_row,
-    }
-  }
-  return {
-    ...base,
-    next_connection: s.next_connection,
-    gates: s.gates.map((g) => ({ id: g.id, free_from: hhmm(g.free_from_min) })),
-    real_row,
-  }
-}
+const factsFor = (role, s) => FACTS[role](s)
 
 const DUTY = {
-  ATC: 'You are the air traffic controller. You own the runway: arrival delay can only be one of runway_slots_delay_min, and a slot is unusable if it is less than wake_separation_min after a heavy arrival (heavy_arrivals, at_delay_min on the same delay scale), because of wake turbulence.',
-  PILOT: 'You are the pilot in command. You own fuel and crew duty: delay must stay within (fuel_on_board_min - min_reserve_min), and the aircraft must be on the ground before crew_shift_end. Also protect the passenger connection (next_connection) where safely possible.',
-  GROUND: 'You are the ground operations manager. You own gates: the aircraft can only use a gate that is free at its actual arrival time (scheduled arrival + delay). You must name the gate.',
+  ATC: 'You are the air traffic controller. You own the runway. Only propose slots listed in your facts with usable=true, i.e. gap_to_leader_min is null or >= required_gap_min (wake turbulence behind a heavy arrival). Propose the earliest such slot first. If another agent needs a different delay, counter with the earliest usable slot that satisfies them.',
+  PILOT: 'You are the pilot in command. You own fuel and crew duty. ACCEPT only if the delay on the table is <= usable_holding_min and <= latest_delay_for_crew_min. Otherwise COUNTER with the largest delay you can accept (the smaller of those two limits). Also protect the passenger connection where safely possible.',
+  GROUND: 'You are the ground operations manager. You own gates. ACCEPT a gate only if its free_from is no later than arrival time minus gate_change_notice_min, i.e. delay_min >= the gate\'s ready_at_delay_min. Otherwise COUNTER with the smallest delay at which a gate is ready, and name that gate. You must name the gate.',
 }
 
 function systemPrompt(role, facts) {
@@ -111,44 +73,6 @@ async function callAgent(baseUrl, role, s, log) {
   } catch (e) {
     return { type: 'ERROR', delay_min: null, gate: null, message: e.message }
   }
-}
-
-// Plain-code feasibility check against the full scenario.
-export function checkProposal(s, p) {
-  const violations = []
-  const delay = p && p.delay_min
-  const gate = p && s.gates.find((g) => g.id === p.gate)
-  if (!Number.isFinite(delay)) return { ok: false, violations: ['SLOT'], warnings: [] }
-  const arrival = s.scheduled_arrival_min + delay
-  if (!s.runway_slots_delay_min.includes(delay)) violations.push('SLOT')
-  if (s.heavy_arrivals.some((h) => delay >= h.at_delay_min && delay - h.at_delay_min < WAKE_SEPARATION_MIN)) violations.push('WAKE')
-  if (delay > s.fuel_on_board_min - s.min_reserve_min) violations.push('FUEL')
-  if (!gate || gate.free_from_min > arrival) violations.push('GATE')
-  if (arrival > s.crew_shift_end_min) violations.push('CREW')
-  const connection = connectionStatus(s, p)
-  return { ok: violations.length === 0, violations, warnings: connection.missed ? ['CONNECTION_MISSED'] : [], connection }
-}
-
-// Soft constraint: never blocks a plan, but is shown to the agents and the human approver.
-// At gate = scheduled arrival + delay + real TAXI_IN; connection time comes from next_connection.
-export function connectionStatus(s, p) {
-  const [, h, m] = s.next_connection.match(/(\d{1,2}):(\d{2})/)
-  const departs = Number(h) * 60 + Number(m)
-  const atGate = s.scheduled_arrival_min + p.delay_min + s.source.TAXI_IN
-  return { missed: atGate > departs, at_gate: hhmm(atGate), departs: hhmm(departs) }
-}
-
-// Deterministic fallback: earliest runway slot with the earliest-free gate that passes the checker.
-export function fallback(s) {
-  const slots = [...s.runway_slots_delay_min].sort((a, b) => a - b)
-  const gates = [...s.gates].sort((a, b) => a.free_from_min - b.free_from_min)
-  for (const delay_min of slots) {
-    for (const g of gates) {
-      const p = { delay_min, gate: g.id }
-      if (checkProposal(s, p).ok) return p
-    }
-  }
-  return null
 }
 
 // Consensus: nobody rejects/escalates, all give the same delay, GROUND names a gate.

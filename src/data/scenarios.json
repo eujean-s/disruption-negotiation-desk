@@ -27,11 +27,11 @@
     "gates": [
       {
         "id": "B10",
-        "free_from_min": 953
+        "free_from_min": 933
       },
       {
         "id": "C13",
-        "free_from_min": 983
+        "free_from_min": 963
       }
     ],
     "crew_shift_end_min": 1188,
@@ -125,11 +125,11 @@
     "gates": [
       {
         "id": "C17",
-        "free_from_min": 602
+        "free_from_min": 582
       },
       {
         "id": "D24",
-        "free_from_min": 632
+        "free_from_min": 612
       }
     ],
     "crew_shift_end_min": 792,
@@ -216,11 +216,11 @@
     "gates": [
       {
         "id": "D24",
-        "free_from_min": 1044
+        "free_from_min": 1024
       },
       {
         "id": "A5",
-        "free_from_min": 1074
+        "free_from_min": 1054
       }
     ],
     "crew_shift_end_min": 1259,
@@ -298,11 +298,11 @@
     "gates": [
       {
         "id": "A3",
-        "free_from_min": 865
+        "free_from_min": 845
       },
       {
         "id": "B16",
-        "free_from_min": 910
+        "free_from_min": 890
       }
     ],
     "crew_shift_end_min": 1065,
@@ -385,11 +385,11 @@
     "gates": [
       {
         "id": "B10",
-        "free_from_min": 1043
+        "free_from_min": 1023
       },
       {
         "id": "C27",
-        "free_from_min": 1073
+        "free_from_min": 1053
       }
     ],
     "crew_shift_end_min": 1238,
@@ -467,11 +467,11 @@
     "gates": [
       {
         "id": "C17",
-        "free_from_min": 1234
+        "free_from_min": 1214
       },
       {
         "id": "D8",
-        "free_from_min": 1259
+        "free_from_min": 1239
       }
     ],
     "crew_shift_end_min": 1374,
@@ -544,11 +544,11 @@
     "gates": [
       {
         "id": "D24",
-        "free_from_min": 749
+        "free_from_min": 729
       },
       {
         "id": "A19",
-        "free_from_min": 764
+        "free_from_min": 744
       }
     ],
     "crew_shift_end_min": 924,
@@ -621,11 +621,11 @@
     "gates": [
       {
         "id": "A3",
-        "free_from_min": 1125
+        "free_from_min": 1105
       },
       {
         "id": "B30",
-        "free_from_min": 1155
+        "free_from_min": 1135
       }
     ],
     "crew_shift_end_min": 1129,

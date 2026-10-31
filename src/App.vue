@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import scenarios from './data/scenarios.json'
 import { runNegotiation, MAX_ROUNDS } from './negotiate.js'
+import { WAKE_SEPARATION_MIN, GATE_CHANGE_NOTICE_MIN } from './checker.js'
 
 const selectedId = ref(scenarios[0].id)
 const events = ref([])
@@ -11,6 +12,16 @@ const approved = ref(false)
 const approvedAt = ref(null)
 
 const scenario = computed(() => scenarios.find((s) => s.id === selectedId.value))
+
+// Scenario-specific `interpretations` when present, plus the standing assumptions of this build.
+const assumptions = computed(() => [
+  ...(scenario.value.interpretations || []),
+  scenario.value.data_note,
+  `Operational limits from challenge2_operational_constraints.xlsx (synthetic planning limits, per the organisers).`,
+  `Wake: a slot less than ${WAKE_SEPARATION_MIN} min (120 s, Heavy follows Heavy) behind a heavy arrival is unusable.`,
+  `Gate change notice: the gate must be free at least ${GATE_CHANGE_NOTICE_MIN} min before arrival.`,
+  'Usable holding = fuel on board minus the 45 min spare/reserve. Passenger connection is a warning only; it never blocks.',
+].filter(Boolean))
 
 const roleBadge = { ATC: 'bg-primary', PILOT: 'bg-success', GROUND: 'bg-warning text-dark' }
 const typeBadge = {
@@ -78,6 +89,13 @@ async function run() {
       </div>
     </div>
     <p class="small text-muted">{{ scenario.disruption }} (max {{ MAX_ROUNDS }} rounds)</p>
+
+    <div class="card card-body mb-3 small">
+      <h2 class="h6">Assumptions</h2>
+      <ul class="mb-0">
+        <li v-for="(a, i) in assumptions" :key="i">{{ a }}</li>
+      </ul>
+    </div>
 
     <ul class="list-group mb-3">
       <li v-for="(e, i) in events" :key="i" class="list-group-item">
