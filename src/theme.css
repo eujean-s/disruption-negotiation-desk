@@ -1,0 +1,102 @@
+/* Design tokens: Editorial minimalism x data-dense pro. Mapped onto Bootstrap 5.3 dark-mode variables. */
+:root,
+[data-bs-theme='dark'] {
+  --bg: #0d1013;
+  --surface: #14181d;
+  --surface-2: #1a1f25;
+  --border: #262c33;
+  --fg: #e9edf1;
+  --muted: #7d8590;
+  --accent: #5b8cff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+  --sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--fg);
+  --bs-emphasis-color: var(--fg);
+  --bs-secondary-color: var(--muted);
+  --bs-tertiary-bg: var(--surface);
+  --bs-secondary-bg: var(--surface-2);
+  --bs-border-color: var(--border);
+  --bs-body-font-family: var(--sans);
+  --bs-font-monospace: var(--mono);
+  --bs-body-font-size: 0.9375rem;
+  --bs-primary: var(--accent);
+  --bs-primary-rgb: 91, 140, 255;
+  --bs-success: var(--ok);
+  --bs-success-rgb: 63, 185, 80;
+  --bs-warning: var(--warn);
+  --bs-danger: var(--bad);
+  --bs-danger-rgb: 248, 81, 73;
+  --bs-success-text-emphasis: var(--ok);
+  --bs-danger-text-emphasis: var(--bad);
+  --bs-warning-text-emphasis: var(--warn);
+  --bs-focus-ring-color: rgba(91, 140, 255, 0.35);
+  --bs-border-radius: 0.5rem;
+  color-scheme: dark;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01';
+}
+
+.text-success { color: var(--ok) !important; }
+.text-danger { color: var(--bad) !important; }
+.text-muted { color: var(--muted) !important; }
+
+.card {
+  --bs-card-bg: var(--surface);
+  --bs-card-border-color: var(--border);
+  --bs-card-cap-bg: var(--surface);
+}
+
+.form-select,
+.form-control {
+  background-color: var(--bg);
+  border-color: var(--border);
+  color: var(--fg);
+}
+.form-select:focus,
+.form-control:focus {
+  background-color: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.25);
+  color: var(--fg);
+}
+
+/* Accent is reserved for primary actions. */
+.btn-primary {
+  --bs-btn-bg: var(--accent);
+  --bs-btn-border-color: var(--accent);
+  --bs-btn-hover-bg: #7aa2ff;
+  --bs-btn-hover-border-color: #7aa2ff;
+  --bs-btn-active-bg: #4a7bf0;
+  --bs-btn-active-border-color: #4a7bf0;
+  --bs-btn-disabled-bg: var(--accent);
+  --bs-btn-disabled-border-color: var(--accent);
+  --bs-btn-color: #0b1220;
+  --bs-btn-hover-color: #0b1220;
+  --bs-btn-active-color: #0b1220;
+  --bs-btn-disabled-color: #0b1220;
+  font-weight: 600;
+}
+.btn-quiet {
+  --bs-btn-color: var(--fg);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--border);
+  --bs-btn-hover-color: var(--fg);
+  --bs-btn-hover-bg: var(--surface-2);
+  --bs-btn-hover-border-color: #3a424b;
+  --bs-btn-active-bg: var(--surface-2);
+  --bs-btn-active-border-color: #3a424b;
+  --bs-btn-disabled-color: var(--muted);
+  --bs-btn-disabled-border-color: var(--border);
+  font-weight: 500;
+}
+.btn:focus-visible { box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.45); }
+
+.mono { font-family: var(--mono); font-feature-settings: 'zero'; }
