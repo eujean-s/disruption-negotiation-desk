@@ -1,38 +1,86 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import scenarios from './data/scenarios.json'
+import { runNegotiation, MAX_ROUNDS } from './negotiate.js'
 
-const result = ref('')
-const loading = ref(false)
+const selectedId = ref(scenarios[0].id)
+const events = ref([])
+const outcome = ref(null)
+const running = ref(false)
+const approved = ref(false)
 
-async function testAgent() {
-  loading.value = true
-  result.value = ''
-  try {
-    const res = await fetch('/api/agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: 'You are a test assistant. Reply in one short sentence.',
-        messages: [{ role: 'user', content: 'Say hello and confirm you are working.' }],
-      }),
-    })
-    const data = await res.json()
-    result.value = data.text || data.error
-  } catch (e) {
-    result.value = 'Request failed: ' + e.message
-  }
-  loading.value = false
+const scenario = computed(() => scenarios.find((s) => s.id === selectedId.value))
+
+const roleBadge = { ATC: 'bg-primary', PILOT: 'bg-success', GROUND: 'bg-warning text-dark' }
+const typeBadge = {
+  PROPOSE: 'bg-info text-dark', ACCEPT: 'bg-success', COUNTER: 'bg-warning text-dark',
+  REJECT: 'bg-danger', ESCALATE: 'bg-dark', INVALID: 'bg-secondary', ERROR: 'bg-secondary',
+}
+const outcomeClass = { CONSENSUS: 'alert-success', FALLBACK: 'alert-warning', ESCALATE: 'alert-danger' }
+
+async function run() {
+  running.value = true
+  approved.value = false
+  events.value = []
+  outcome.value = null
+  const result = await runNegotiation(scenario.value, {
+    onEvent: (e) => (e.kind === 'outcome' ? (outcome.value = e) : events.value.push(e)),
+  })
+  outcome.value = result
+  running.value = false
 }
 </script>
 
 <template>
-  <div class="container py-5">
-    <h1 class="mb-3">Agent test</h1>
-    <button class="btn btn-primary" :disabled="loading" @click="testAgent">
-      {{ loading ? 'Calling Claude...' : 'Test agent' }}
-    </button>
-    <div v-if="result" class="card mt-4">
-      <div class="card-body" style="white-space: pre-wrap">{{ result }}</div>
+  <div class="container py-4" style="max-width: 820px">
+    <h1 class="h3 mb-1">ATC · Pilot · Ground negotiation</h1>
+    <p class="text-muted">Three separate LLM agents negotiate; plain code checks the result.</p>
+
+    <div class="row g-2 align-items-end mb-3">
+      <div class="col">
+        <label class="form-label" for="sc">Scenario</label>
+        <select id="sc" v-model="selectedId" class="form-select" :disabled="running">
+          <option v-for="s in scenarios" :key="s.id" :value="s.id">{{ s.id }} · {{ s.flight }} · {{ s.trigger }}</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary" :disabled="running" @click="run">
+          {{ running ? 'Negotiating...' : 'Run' }}
+        </button>
+      </div>
+    </div>
+    <p class="small text-muted">{{ scenario.disruption }} (max {{ MAX_ROUNDS }} rounds)</p>
+
+    <ul class="list-group mb-3">
+      <li v-for="(e, i) in events" :key="i" class="list-group-item">
+        <template v-if="e.kind === 'message'">
+          <span class="badge bg-light text-dark border me-1">Round {{ e.round }}</span>
+          <span class="badge me-1" :class="roleBadge[e.role]">{{ e.role }}</span>
+          <span class="badge me-2" :class="typeBadge[e.type]">{{ e.type }}</span>
+          <span class="small text-muted">delay {{ e.delay_min ?? '-' }} · gate {{ e.gate ?? '-' }}</span>
+          <div class="mt-1">{{ e.message }}</div>
+        </template>
+        <template v-else>
+          <span class="badge bg-light text-dark border me-1">Round {{ e.round }}</span>
+          <span class="badge bg-dark me-2">CHECKER</span>
+          <strong :class="e.ok ? 'text-success' : 'text-danger'">{{ e.ok ? 'PASSED' : 'BLOCKED' }}</strong>
+          <span class="small text-muted ms-2">delay {{ e.proposal.delay_min }} · gate {{ e.proposal.gate }}</span>
+          <span v-if="!e.ok" class="ms-2 text-danger">violations: {{ e.violations.join(', ') }}</span>
+        </template>
+      </li>
+      <li v-if="running" class="list-group-item text-muted">Waiting for next agent...</li>
+    </ul>
+
+    <div v-if="outcome" class="alert" :class="outcomeClass[outcome.outcome]">
+      <h2 class="h5">Outcome: {{ outcome.outcome }}</h2>
+      <p v-if="outcome.proposal" class="mb-2">
+        Arrival delay <strong>{{ outcome.proposal.delay_min }} min</strong>, gate <strong>{{ outcome.proposal.gate }}</strong>
+        <span v-if="outcome.outcome === 'FALLBACK'"> (rule-based: earliest slot that passes the checker)</span>
+      </p>
+      <p v-else class="mb-2">No option passes the checker. A human must decide.</p>
+      <button v-if="outcome.proposal" class="btn btn-success" :disabled="approved" @click="approved = true">
+        {{ approved ? 'Approved by human ✓' : 'Approve' }}
+      </button>
     </div>
   </div>
 </template>
