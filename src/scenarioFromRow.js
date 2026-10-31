@@ -1,7 +1,7 @@
 // Build a negotiation scenario from any flights.csv row. Plain code, deterministic.
 // Real values come from the row; operational limits come from the organisers' constraints workbook;
 // anything the workbook does not give is a stated assumption (returned in `interpretations`).
-import capacity from './data/airport_capacity.json'
+// `capacity` is src/data/airport_capacity.json, passed in so this also runs in plain Node (scripts/impact.js).
 import { GATE_CHANGE_NOTICE_MIN, WAKE_SEPARATION_MIN, hhmm } from './checker.js'
 
 export const FLIGHTS_HEADER = 'YEAR,MONTH,DAY,DAY_OF_WEEK,AIRLINE,FLIGHT_NUMBER,TAIL_NUMBER,ORIGIN_AIRPORT,DESTINATION_AIRPORT,SCHEDULED_DEPARTURE,DEPARTURE_TIME,DEPARTURE_DELAY,TAXI_OUT,WHEELS_OFF,SCHEDULED_TIME,ELAPSED_TIME,AIR_TIME,DISTANCE,WHEELS_ON,TAXI_IN,SCHEDULED_ARRIVAL,ARRIVAL_TIME,ARRIVAL_DELAY,DIVERTED,CANCELLED,CANCELLATION_REASON,AIR_SYSTEM_DELAY,SECURITY_DELAY,AIRLINE_DELAY,LATE_AIRCRAFT_DELAY,WEATHER_DELAY'.split(',')
@@ -36,7 +36,7 @@ export function parseFlightRow(text) {
   return row
 }
 
-export function scenarioFromRow(row) {
+export function scenarioFromRow(row, capacity) {
   const dest = row.DESTINATION_AIRPORT
   const sizeClass = capacity.airports[dest] || 'Non-hub'
   const cap = capacity.classes[sizeClass]

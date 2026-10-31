@@ -25,7 +25,7 @@ const rowError = ref('')
 function loadRow() {
   rowError.value = ''
   try {
-    customScenario.value = scenarioFromRow(parseFlightRow(rowText.value))
+    customScenario.value = scenarioFromRow(parseFlightRow(rowText.value), capacity)
     resetRun()
   } catch (e) {
     customScenario.value = null

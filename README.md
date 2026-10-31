@@ -18,6 +18,7 @@ Stack: Vue 3, Vite, Bootstrap. One Vercel function (`api/agent.js`) wraps the An
 npm install
 npx vercel dev            # serves the app and /api/agent on localhost:3000
 node scripts/evaluate.js  # in another terminal: runs every scenario N times (default 3, max 5)
+node scripts/impact.js path/to/flights.csv 500  # impact measures, plain code, no API calls
 ```
 
 `/api/agent` is public, so it only accepts requests shaped like the app's own: a string system prompt (max 4,000 chars) and 1-4 text messages (max 6,000 chars each). Anything else gets a 400. The model and `max_tokens` are fixed on the server. There is no rate limit, which would need storage.
@@ -141,3 +142,21 @@ Real BTS arrival delay vs the earliest plan that passes the checker under this p
 | S6-S8 | | 112 / 328 / 70 | none: ESCALATE to a human |
 
 This is **not like-for-like**: the real delay includes late departure and causes my model does not represent, and the limits (slots, gates, fuel) are synthetic. S3 shows the comparison can go the other way. The honest claim is narrower: given the same constraints, the agents settle on a checked plan in 1.8 rounds on average and never on an unsafe one, instead of a sequence of phone calls. The time saved per disruption was not measured against a real manual process.
+
+## Impact measures (`scripts/impact.js`)
+
+Plain code, no LLM calls, reproducible: every 717th row of `flights.csv` (358,774 rows, 500 sampled, 0 skipped) is turned into a scenario with the same builder as the app's Custom option, then compared against simple stand-ins for today's process.
+
+| Measure | 500 real flights | Curated S1-S8 |
+| --- | --- | --- |
+| **Resolved automatically** (checked plan for the duty manager to approve) | **434/500 (86.8%)** | 5/8 |
+| **Escalated** to the duty manager | **66/500 (13.2%)** | 3/8 |
+| Single-party plan (ATC's earliest slot + first free gate, no cross-check) breaks a rule | 500/500 (GATE 500, WAKE 321, FUEL 40) | 8/8 |
+| Delay saved vs a cautious planner taking the latest safe slot | mean 10 min (about $1,005 at $100.76/min) | mean 9 min |
+
+**How much each number is worth:**
+
+- **Resolved vs escalated is the meaningful result.** Whether a flight can be resolved depends on its real recorded weather and air-system delay against the workbook's fuel rule (45 min spare holding). Claim: on 500 real disrupted flights, the tool produced a safety-checked plan for 87% and sent 13% to the duty manager. The runway slots and gates behind it are still synthetic.
+- **"Single-party plan breaks a rule: 100%" is built into the scenario generator, not a finding.** The generator opens the first gate when the first slot arrives, so with the 20 min gate notice the earliest slot always fails GATE; it also places a heavy arrival just before the first slot at hubs (the 321 WAKE failures). The curated scenarios were designed the same way. It only shows that the checker catches these conflicts, not how often they happen in reality.
+- **"10 min / $1,005 saved" is an illustration, not a measured saving.** It follows from the assumed slot spacing and the 45 min fuel limit, and "cautious planner = latest safe slot" is my choice of baseline.
+- **Not measured:** how long phone coordination takes today. Without that baseline, the time saved per disruption cannot be stated.
