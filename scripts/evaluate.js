@@ -28,6 +28,7 @@ for (const s of scenarios) {
     checker_blocked: results.reduce((a, r) => a + r.blocked, 0),
     avg_rounds: avg(results.filter((r) => r.outcome === 'CONSENSUS').map((r) => r.round)),
     fallback: count('FALLBACK'),
+    connection_missed: results.filter((r) => r.connection && r.connection.missed).length,
     escalate: count('ESCALATE'),
     mismatches: results.filter((r) => !isCorrect(s, r)).length,
     agent_errors: results.reduce((a, r) => a + r.log.filter((m) => m.type === 'ERROR' || m.type === 'INVALID').length, 0),
@@ -44,6 +45,7 @@ console.log(`Consensus rate (feasible S1-S5): ${sum({ key: 'consensus', where: f
 const rr = rows.map((r) => r.avg_rounds).filter((x) => x !== null)
 console.log(`Avg rounds to consensus: ${avg(rr)} (limit ${MAX_ROUNDS})`)
 console.log(`Checker-blocked proposals (all): ${sum({ key: 'checker_blocked' })}`)
+console.log(`Passenger connection missed (soft warning, of plans made): ${sum({ key: 'connection_missed' })}`)
 console.log(`Fallback count (all): ${sum({ key: 'fallback' })}`)
 console.log(`Correct escalations (infeasible S6-S8): ${sum({ key: 'escalate', where: (r) => !feasible(r) })}/${sum({ key: 'runs', where: (r) => !feasible(r) })}`)
 const errs = sum({ key: 'agent_errors' })

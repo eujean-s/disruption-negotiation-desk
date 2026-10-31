@@ -94,6 +94,7 @@ async function run() {
           <strong :class="e.ok ? 'text-success' : 'text-danger'">{{ e.ok ? 'PASSED' : 'BLOCKED' }}</strong>
           <span class="small text-muted ms-2">delay {{ e.proposal.delay_min }} · gate {{ e.proposal.gate }}</span>
           <span v-if="!e.ok" class="ms-2 text-danger">violations: {{ e.violations.join(', ') }}</span>
+          <span v-if="e.warnings.length" class="badge bg-warning text-dark ms-2">CONNECTION MISSED (warning)</span>
         </template>
       </li>
       <li v-if="running" class="list-group-item text-muted">Waiting for next agent...</li>
@@ -105,7 +106,11 @@ async function run() {
         Arrival delay <strong>{{ outcome.proposal.delay_min }} min</strong>, gate <strong>{{ outcome.proposal.gate }}</strong>
         <span v-if="outcome.outcome === 'FALLBACK'"> (rule-based: earliest slot that passes the checker)</span>
       </p>
-      <p v-else class="mb-2">No option passes the checker. A human must decide.</p>
+      <p v-if="outcome.connection" class="mb-2" :class="outcome.connection.missed ? 'text-danger' : 'text-success'">
+        Passenger connection: at gate {{ outcome.connection.at_gate }}, connection departs {{ outcome.connection.departs }}
+        → <strong>{{ outcome.connection.missed ? 'MISSED (soft constraint, human decides)' : 'protected' }}</strong>
+      </p>
+      <p v-if="!outcome.proposal" class="mb-2">No option passes the checker. A human must decide.</p>
       <button v-if="outcome.proposal" class="btn btn-success" :disabled="approved" @click="approve">
         {{ approved ? 'Approved by human ✓' : 'Approve' }}
       </button>

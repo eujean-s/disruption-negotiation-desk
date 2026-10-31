@@ -39,7 +39,7 @@ export function factsFor(role, s) {
 
 const DUTY = {
   ATC: 'You are the air traffic controller. You own the runway slots: arrival delay can only be one of runway_slots_delay_min.',
-  PILOT: 'You are the pilot in command. You own fuel and crew duty: delay must stay within (fuel_on_board_min - min_reserve_min), and the aircraft must be on the ground before crew_shift_end.',
+  PILOT: 'You are the pilot in command. You own fuel and crew duty: delay must stay within (fuel_on_board_min - min_reserve_min), and the aircraft must be on the ground before crew_shift_end. Also protect the passenger connection (next_connection) where safely possible.',
   GROUND: 'You are the ground operations manager. You own gates: the aircraft can only use a gate that is free at its actual arrival time (scheduled arrival + delay). You must name the gate.',
 }
 
@@ -58,7 +58,8 @@ function transcriptText(log) {
   return log
     .map((m) =>
       m.kind === 'check'
-        ? `R${m.round} CHECKER: ${m.ok ? 'PASSED' : 'BLOCKED (' + m.violations.join(', ') + ')'}`
+        ? `R${m.round} CHECKER: ${m.ok ? 'PASSED' : 'BLOCKED (' + m.violations.join(', ') + ')'}` +
+          (m.warnings.length ? ` WARNING: passenger connection missed (at gate ${m.connection.at_gate}, departs ${m.connection.departs})` : '')
         : `R${m.round} ${m.role} [${m.type}] delay_min=${m.delay_min} gate=${m.gate}: ${m.message}`,
     )
     .join('\n')
@@ -106,13 +107,23 @@ export function checkProposal(s, p) {
   const violations = []
   const delay = p && p.delay_min
   const gate = p && s.gates.find((g) => g.id === p.gate)
-  if (!Number.isFinite(delay)) return { ok: false, violations: ['SLOT'] }
+  if (!Number.isFinite(delay)) return { ok: false, violations: ['SLOT'], warnings: [] }
   const arrival = s.scheduled_arrival_min + delay
   if (!s.runway_slots_delay_min.includes(delay)) violations.push('SLOT')
   if (delay > s.fuel_on_board_min - s.min_reserve_min) violations.push('FUEL')
   if (!gate || gate.free_from_min > arrival) violations.push('GATE')
   if (arrival > s.crew_shift_end_min) violations.push('CREW')
-  return { ok: violations.length === 0, violations }
+  const connection = connectionStatus(s, p)
+  return { ok: violations.length === 0, violations, warnings: connection.missed ? ['CONNECTION_MISSED'] : [], connection }
+}
+
+// Soft constraint: never blocks a plan, but is shown to the agents and the human approver.
+// At gate = scheduled arrival + delay + real TAXI_IN; connection time comes from next_connection.
+export function connectionStatus(s, p) {
+  const [, h, m] = s.next_connection.match(/(\d{1,2}):(\d{2})/)
+  const departs = Number(h) * 60 + Number(m)
+  const atGate = s.scheduled_arrival_min + p.delay_min + s.source.TAXI_IN
+  return { missed: atGate > departs, at_gate: hhmm(atGate), departs: hhmm(departs) }
 }
 
 // Deterministic fallback: earliest runway slot with the earliest-free gate that passes the checker.
@@ -160,7 +171,7 @@ export async function runNegotiation(scenario, { onEvent = () => {}, baseUrl = '
     const verdict = checkProposal(scenario, candidate)
     emit({ kind: 'check', round, proposal: candidate, ...verdict })
     if (verdict.ok) {
-      const out = { kind: 'outcome', outcome: 'CONSENSUS', proposal: candidate, round, blocked }
+      const out = { kind: 'outcome', outcome: 'CONSENSUS', proposal: candidate, round, blocked, connection: verdict.connection }
       emit(out)
       return { ...out, log }
     }
@@ -169,7 +180,7 @@ export async function runNegotiation(scenario, { onEvent = () => {}, baseUrl = '
 
   const fb = fallback(scenario)
   const out = fb
-    ? { kind: 'outcome', outcome: 'FALLBACK', proposal: fb, round: lastRound, blocked }
+    ? { kind: 'outcome', outcome: 'FALLBACK', proposal: fb, round: lastRound, blocked, connection: connectionStatus(scenario, fb) }
     : { kind: 'outcome', outcome: 'ESCALATE', proposal: null, round: lastRound, blocked }
   emit(out)
   return { ...out, log }
