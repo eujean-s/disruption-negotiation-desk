@@ -4,6 +4,14 @@ AUTONOMOUS SG 2026, AI & Aerospace, Challenge #2. Three LLM agents negotiate a r
 
 Stack: Vue 3, Vite, Bootstrap. One Vercel function (`api/agent.js`) wraps the Anthropic API. Live: https://agents-app-sandy.vercel.app
 
+## Who it is for
+
+**User:** the airline's operations duty manager at the hub (operations control centre), who has to settle a disrupted arrival with three parties who each own one constraint: ATC (runway slot, wake separation), the flight crew (fuel, duty time) and ramp/ground ops (gate).
+
+**Today:** that settlement is done by phone and manual system updates, one party at a time. Each call can surface a new constraint (no gate free, fuel too short) and restart the loop, while the aircraft holds at about **$100.76 per block minute** (A4A 2024, see below).
+
+**With this tool:** the three positions are negotiated in at most 3 rounds, every proposal is checked by plain-code rules, and the duty manager gets one checked plan (or an explicit "nothing is safe") with the full log, and approves it.
+
 ## Run
 
 ```
@@ -14,7 +22,22 @@ node scripts/evaluate.js  # in another terminal: runs every scenario N times (de
 
 `/api/agent` is public, so it only accepts requests shaped like the app's own: a string system prompt (max 4,000 chars) and 1-4 text messages (max 6,000 chars each). Anything else gets a 400. The model and `max_tokens` are fixed on the server. There is no rate limit, which would need storage.
 
-Pick a scenario, press **Run**, watch the messages, then **Approve** (or decide by hand on ESCALATE). **Download log (JSON)** saves the traceable consensus log: every message, checker verdict, outcome and the human approval with timestamp.
+Pick a scenario (or **Custom** to paste any `flights.csv` row), press **Run**, watch the messages, then **Approve** (or decide by hand on ESCALATE). **Download log (JSON)** saves the traceable consensus log: every message, checker verdict, outcome and the human approval with timestamp.
+
+## Any flights.csv row (Custom)
+
+Choose **Custom**, paste one line from `flights.csv` (header optional) and press **Load row**. `src/scenarioFromRow.js` builds the scenario in plain code:
+
+| Value | From |
+| --- | --- |
+| Flight, scheduled arrival, weather / air-system / late-aircraft delay, taxi-in, scheduled time | the pasted row (real) |
+| Runway ops/hour, spare gates, minimum turnaround at the destination | workbook `airport_capacity` (unlisted airports use Non-hub limits) |
+| 30 min final reserve + 45 min spare holding, 13 h crew duty, 20 min gate notice, 120 s wake gap | workbook `fuel_and_crew`, `wake_separation` |
+| First slot = weather + air-system delay; slot spacing = 600 / ops per hour; one heavy ahead at hubs; gates free one turnaround apart; crew report 60 min before departure; connection 60 min after arrival | **my assumptions**, listed in the app's Assumptions panel for that row |
+
+Custom rows have no ground truth: the checker is the only judge. Sample of 10 rows spread through the first 60,000 lines of `flights.csv`: the fallback finds a safe plan for 6 and escalates 4 (fuel: the first usable slot is beyond 45 min of holding). One live run (AA 8 HNL-DFW): ATC skipped the wake-blocked +5 slot, Ground countered for gate notice, consensus at +25 / DFW-S1 in 2 rounds, checker passed.
+
+**Limit:** all of the delay is treated as airborne holding against the 45 min fuel spare. In reality much of a late-aircraft delay is spent on the ground at the origin, so long-delay rows escalate more often than they would in practice.
 
 ## LLM vs plain code
 
@@ -103,3 +126,18 @@ From `challenge2_operational_constraints.xlsx` (organisers' synthetic planning l
 | Same study on 2007 data: $8.3 B airlines, $16.7 B passengers, $32.9 B total | | [FAA-commissioned Total Delay Impact Study (BTS)](https://rosap.ntl.bts.gov/view/dot/6234) |
 
 **How this is used.** Status quo: ATC, pilot and ground staff coordinate by phone and manual updates, so a disrupted flight waits while each party checks its own limits. Cost of that wait at the A4A rate = delay minutes x $100.76. This tool's measurable output is the arrival delay it settles on and how many rounds it needs (1.8 on average here). **It does not yet measure minutes saved against a real manual process**, so no dollar saving is claimed. The A4A rate covers airline operating cost only; passenger time and missed connections are not included. Running cost: about 3 LLM calls per round, 1.8 rounds on average (roughly 5-6 calls of at most 300 output tokens per disruption).
+
+### Before / after (estimate, not a measured saving)
+
+Real BTS arrival delay vs the earliest plan that passes the checker under this project's synthetic limits:
+
+| Scenario | Flight | Real arrival delay (min) | Earliest safe plan (min) |
+| --- | --- | --- | --- |
+| S1 | AA 2229 TUS-DFW | 83 | 20 (B10) |
+| S2 | MQ 3167 BNA-LGA | 134 | 50 (C17) |
+| S3 | UA 646 ORD-EWR | 26 | **40** (D24): worse than reality |
+| S4 | WN 1998 SAN-DEN | 67 | 40 (A3) |
+| S5 | DL 795 GRR-MSP | 127 | 60 (B10) |
+| S6-S8 | | 112 / 328 / 70 | none: ESCALATE to a human |
+
+This is **not like-for-like**: the real delay includes late departure and causes my model does not represent, and the limits (slots, gates, fuel) are synthetic. S3 shows the comparison can go the other way. The honest claim is narrower: given the same constraints, the agents settle on a checked plan in 1.8 rounds on average and never on an unsafe one, instead of a sequence of phone calls. The time saved per disruption was not measured against a real manual process.

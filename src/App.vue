@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import scenarios from './data/scenarios.json'
 import { runNegotiation, MAX_ROUNDS } from './negotiate.js'
 import { WAKE_SEPARATION_MIN, GATE_CHANGE_NOTICE_MIN } from './checker.js'
+import { parseFlightRow, scenarioFromRow } from './scenarioFromRow.js'
 
 const selectedId = ref(scenarios[0].id)
 const events = ref([])
@@ -11,16 +12,34 @@ const running = ref(false)
 const approved = ref(false)
 const approvedAt = ref(null)
 
-const scenario = computed(() => scenarios.find((s) => s.id === selectedId.value))
+// Any flights.csv row can be pasted in and becomes a scenario (limits from the constraints workbook).
+const rowText = ref('2015,1,1,4,AA,8,N368AA,HNL,DFW,1745,1933,108,15,1948,445,446,420,3784,0648,11,0510,0659,109,0,0,,1,0,0,108,0')
+const customScenario = ref(null)
+const rowError = ref('')
+
+function loadRow() {
+  rowError.value = ''
+  try {
+    customScenario.value = scenarioFromRow(parseFlightRow(rowText.value))
+    resetRun()
+  } catch (e) {
+    customScenario.value = null
+    rowError.value = e.message
+  }
+}
+
+const scenario = computed(() =>
+  selectedId.value === 'CUSTOM' ? customScenario.value : scenarios.find((s) => s.id === selectedId.value),
+)
 
 // Scenario-specific `interpretations` when present, plus the standing assumptions of this build.
-const assumptions = computed(() => [
+const assumptions = computed(() => !scenario.value ? [] : [
   ...(scenario.value.interpretations || []),
   scenario.value.data_note,
   `Operational limits from challenge2_operational_constraints.xlsx (synthetic planning limits, per the organisers).`,
   `Wake: a slot less than ${WAKE_SEPARATION_MIN} min (120 s, Heavy follows Heavy) behind a heavy arrival is unusable.`,
   `Gate change notice: the gate must be free at least ${GATE_CHANGE_NOTICE_MIN} min before arrival.`,
-  'Usable holding = fuel on board minus the 45 min spare/reserve. Passenger connection is a warning only; it never blocks.',
+  'Usable holding = fuel on board minus the minimum reserve. Passenger connection is a warning only; it never blocks.',
 ].filter(Boolean))
 
 const roleBadge = { ATC: 'bg-primary', PILOT: 'bg-success', GROUND: 'bg-warning text-dark' }
@@ -41,6 +60,8 @@ function downloadLog() {
     scenario: scenario.value.id,
     flight: scenario.value.flight,
     csv_row: scenario.value.csv_row,
+    pasted_row: scenario.value.custom ? scenario.value.source : undefined,
+    assumptions: assumptions.value,
     max_rounds: MAX_ROUNDS,
     events: events.value,
     outcome: outcome.value,
@@ -56,12 +77,19 @@ function downloadLog() {
   URL.revokeObjectURL(url)
 }
 
-async function run() {
-  running.value = true
+function resetRun() {
   approved.value = false
   approvedAt.value = null
   events.value = []
   outcome.value = null
+}
+
+watch(selectedId, resetRun)
+
+async function run() {
+  if (!scenario.value) return
+  running.value = true
+  resetRun()
   const result = await runNegotiation(scenario.value, {
     onEvent: (e) => (e.kind === 'outcome' ? (outcome.value = e) : events.value.push(e)),
   })
@@ -80,15 +108,24 @@ async function run() {
         <label class="form-label" for="sc">Scenario</label>
         <select id="sc" v-model="selectedId" class="form-select" :disabled="running">
           <option v-for="s in scenarios" :key="s.id" :value="s.id">{{ s.id }} · {{ s.flight }} · {{ s.trigger }}</option>
+          <option value="CUSTOM">Custom · paste any flights.csv row</option>
         </select>
       </div>
       <div class="col-auto">
-        <button class="btn btn-primary" :disabled="running" @click="run">
+        <button class="btn btn-primary" :disabled="running || !scenario" @click="run">
           {{ running ? 'Negotiating...' : 'Run' }}
         </button>
       </div>
     </div>
-    <p class="small text-muted">{{ scenario.disruption }} (max {{ MAX_ROUNDS }} rounds)</p>
+    <div v-if="selectedId === 'CUSTOM'" class="mb-3">
+      <label class="form-label small" for="row">One line from flights.csv (header optional)</label>
+      <textarea id="row" v-model="rowText" class="form-control font-monospace small" rows="2" :disabled="running"></textarea>
+      <button class="btn btn-outline-primary btn-sm mt-2" :disabled="running" @click="loadRow">Load row</button>
+      <span v-if="rowError" class="text-danger small ms-2">{{ rowError }}</span>
+    </div>
+    <p v-if="scenario" class="small text-muted">
+      <strong v-if="scenario.custom">{{ scenario.flight }}, {{ scenario.date }}: </strong>{{ scenario.disruption }} (max {{ MAX_ROUNDS }} rounds)
+    </p>
 
     <div class="card card-body mb-3 small">
       <h2 class="h6">Assumptions</h2>

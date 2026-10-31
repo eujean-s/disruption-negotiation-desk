@@ -9,7 +9,10 @@ export const WAKE_SEPARATION_MIN = 2
 // Source: challenge2_operational_constraints.xlsx, fuel_and_crew: "Gate change notice, at least 20 minutes before arrival".
 export const GATE_CHANGE_NOTICE_MIN = 20
 
-export const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
+export const hhmm = (m) => {
+  m = ((m % 1440) + 1440) % 1440 // wrap past midnight for display
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
+}
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]))
 
 // Longest delay the aircraft can absorb while keeping its fuel reserve.
@@ -83,7 +86,8 @@ export function checkProposal(s, p) {
 // At gate = scheduled arrival + delay + real TAXI_IN; connection time comes from next_connection.
 export function connectionStatus(s, p) {
   const [, h, m] = s.next_connection.match(/(\d{1,2}):(\d{2})/)
-  const departs = Number(h) * 60 + Number(m)
+  let departs = Number(h) * 60 + Number(m)
+  if (departs < s.scheduled_arrival_min - 120) departs += 1440 // connection is after midnight
   const atGate = s.scheduled_arrival_min + p.delay_min + s.source.TAXI_IN
   return { missed: atGate > departs, at_gate: hhmm(atGate), departs: hhmm(departs) }
 }
