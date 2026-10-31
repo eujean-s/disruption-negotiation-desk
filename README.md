@@ -1,162 +1,177 @@
-# ATC · Pilot · Ground Ops negotiation
+# Disruption Negotiation Desk
 
-AUTONOMOUS SG 2026, AI & Aerospace, Challenge #2. Three LLM agents negotiate a resolution to a flight disruption (arrival delay + gate). Plain code decides whether the result is safe.
+**Three AI agents (ATC, pilot, ground ops) negotiate a disrupted arrival in seconds. Plain-code rules decide what is safe. The duty manager approves.**
 
-Stack: Vue 3, Vite, Bootstrap. One Vercel function (`api/agent.js`) wraps the Anthropic API. Live: https://agents-app-sandy.vercel.app
+![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883?logo=vuedotjs&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952b3?logo=bootstrap&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-serverless-000000?logo=vercel&logoColor=white)
+![Claude](https://img.shields.io/badge/Anthropic-Claude-d97757)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue)
 
-## Who it is for
+AUTONOMOUS SG 2026 · AI & Aerospace · Airbus Challenge #2 · **Live demo: https://agents-app-sandy.vercel.app**
 
-**User:** the airline's operations duty manager at the hub (operations control centre), who has to settle a disrupted arrival with three parties who each own one constraint: ATC (runway slot, wake separation), the flight crew (fuel, duty time) and ramp/ground ops (gate).
+![Screenshot: S1 negotiated to +20 min at gate B10 in one round, every rule checked](docs/screenshot.png)
 
-**Today:** that settlement is done by phone and manual system updates, one party at a time. Each call can surface a new constraint (no gate free, fuel too short) and restart the loop, while the aircraft holds at about **$100.76 per block minute** (A4A 2024, see below).
+**The problem.** When weather or a late aircraft disrupts an arrival, the airline's **hub operations duty manager** has to get three parties to agree on a new landing time and gate: **ATC** (runway slots, wake separation), the **flight crew** (fuel, duty hours) and **ground ops** (gates). Today that happens by phone, one party at a time. Each call can surface a new constraint and restart the loop, while the aircraft holds at about **$100.76 per minute** ([A4A, 2024](https://airlines.org/dataset/u-s-passenger-carrier-delay-costs/)).
 
-**With this tool:** the three positions are negotiated in at most 3 rounds, every proposal is checked by plain-code rules, and the duty manager gets one checked plan (or an explicit "nothing is safe") with the full log, and approves it.
+**The solution.** Three separate LLM agents, each seeing only its own party's data, negotiate for **at most 3 rounds**. Every agreement is checked by **plain-code rules**. The duty manager gets **one safety-checked plan** (or an explicit "nothing is safe, you decide") with the full reasoning and log, then approves, rejects or takes over.
 
-## Run
+## Core features
 
-```
-npm install
-npx vercel dev            # serves the app and /api/agent on localhost:3000
-node scripts/evaluate.js  # in another terminal: runs every scenario N times (default 3, max 5)
-node scripts/impact.js path/to/flights.csv 500  # impact measures, plain code, no API calls
-```
+- **Three independent agents, one message each per round.** ATC, pilot and ground ops are separate model calls with separate prompts and separate facts (the "what ATC saw" fold-out shows exactly what each was given). Consensus within 3 rounds, otherwise a deterministic fallback decides and the log says why.
+- **A safety checker the AI cannot talk its way past.** Every agreement is tested against five rules (**SLOT, WAKE, FUEL, GATE, CREW**) with the numbers shown, e.g. `✓ FUEL 20 min delay vs 55 min usable holding`. Agent text is labelled *unverified*, checker output *verified by code*.
+- **Constraint timeline.** Every offered landing slot on one axis: safe (green) or blocked (red, with the rule), plus the fuel limit, gate-ready times and heavy traffic. You see why the plan was chosen before reading a word of agent chat.
+- **Any real flight, not a canned demo.** Pick one of 8 curated scenarios or paste **any row of the organisers' `flights.csv`**; plain code builds the scenario from the row plus the organisers' constraints workbook.
+- **Human in control, fully traceable.** Approve, reject with a reason, or take over. One click downloads the consensus log: every message, verdict, reason, assumption and the human decision with timestamp.
 
-`/api/agent` is public, so it never accepts prompt text. The browser sends only `{ role, scenario, log }`: a role, a scenario reference (a curated id, or one raw `flights.csv` row) and the negotiation so far. The server rebuilds the scenario itself, cleans the history (known fields, bounded lengths) and recomputes every checker line before building the prompt (`src/prompts.js`), so the endpoint cannot be used as a general Claude proxy and checker verdicts cannot be forged. The model and `max_tokens` (300) are fixed on the server; API errors return a generic message. There is no rate limit (that would need storage), so set a spending limit on the API key.
+### What makes it different
 
-Pick a scenario (or **Custom** to paste any `flights.csv` row), press **Run**, watch the messages, then **Approve** (or decide by hand on ESCALATE). **Download log (JSON)** saves the traceable consensus log: every message, checker verdict, outcome and the human approval with timestamp.
+**The LLM talks; code decides.** The agents never make the safety call. They negotiate and explain; `checkProposal()` has the final word, and an agent's "I accept" never counts on its own.
 
-## Any flights.csv row (Custom)
+**Why use agents at all, when a deterministic fallback can find a safe plan?** Because the fallback only works here because this demo hands it *every* party's data at once. In reality ATC, the crew and ground ops each hold their own constraints in separate systems; that separation is exactly why it is done by phone today. The agents let each party negotiate while sharing only offers, not data, and the checker stands in for the shared safety layer they would all have to accept.
 
-Choose **Custom**, paste one line from `flights.csv` (header optional) and press **Load row**. `src/scenarioFromRow.js` builds the scenario in plain code:
+## Results
 
-| Value | From |
+| Metric | Result |
 | --- | --- |
-| Flight, scheduled arrival, weather / air-system / late-aircraft delay, taxi-in, scheduled time | the pasted row (real) |
-| Runway ops/hour, spare gates, minimum turnaround at the destination | workbook `airport_capacity` (unlisted airports use Non-hub limits) |
-| 30 min final reserve + 45 min spare holding, 13 h crew duty, 20 min gate notice, 120 s wake gap | workbook `fuel_and_crew`, `wake_separation` |
-| First slot = weather + air-system delay; slot spacing = 600 / ops per hour; one heavy ahead at hubs; gates free one turnaround apart; crew report 60 min before departure; connection 60 min after arrival | **my assumptions**, listed in the app's Assumptions panel for that row |
+| Consensus on feasible scenarios (S1-S5, 3 runs each) | **15/15**, in **1.8 rounds** on average (limit 3) |
+| Correct escalations on infeasible scenarios (S6-S8) | **9/9** |
+| Plans outside the safe set | **0/24** |
+| Time to a checked plan (live runs) | **about 6-20 s** |
+| Real flights resolved automatically (500 sampled from `flights.csv`) | **434/500 (86.8%)**; 66 (13.2%) escalated to the duty manager |
 
-Custom rows have no ground truth: the checker is the only judge. Sample of 10 rows spread through the first 60,000 lines of `flights.csv`: the fallback finds a safe plan for 6 and escalates 4 (fuel: the first usable slot is beyond 45 min of holding). One live run (AA 8 HNL-DFW): ATC skipped the wake-blocked +5 slot, Ground countered for gate notice, consensus at +25 / DFW-S1 in 2 rounds, checker passed.
+Read the caveats in [Evaluation](#evaluation) and [Impact](#impact) before quoting these: the limits are synthetic, and the ground truth uses the same rules as the checker.
 
-**Limit:** all of the delay is treated as airborne holding against the 45 min fuel spare. In reality much of a late-aircraft delay is spent on the ground at the origin, so long-delay rows escalate more often than they would in practice.
+## Architecture
 
-## LLM vs plain code
+```
+ Browser (Vue 3)                                   Vercel function            Anthropic API
+┌─────────────────────────────────────────┐      ┌──────────────────────┐    ┌──────────────┐
+│ App.vue  scenario picker / CSV row      │      │ api/agent.js         │    │              │
+│          timeline, log, approve/reject  │      │  - rebuilds scenario │    │  Claude      │
+│                                         │      │    from id / CSV row │───▶│  (one call   │
+│ negotiate.js  round loop (max 3)        │─────▶│  - sanitises history │    │   per agent  │
+│   for each role: { role, scenario, log }│ JSON │  - recomputes checks │◀───│   turn)      │
+│   parseReply() → structured message     │◀─────│  - builds prompt     │    │              │
+│                                         │      │    (src/prompts.js)  │    └──────────────┘
+│ checker.js  (plain code, no AI)         │      └──────────────────────┘
+│   checkProposal · ruleChecks · slotMap  │
+│   fallback() → earliest safe plan       │
+│   else ESCALATE → human decides         │
+└─────────────────────────────────────────┘
+ Data: scenarios.json (8 real BTS rows + synthetic limits) · airport_capacity.json (organisers' workbook)
+```
 
 | Part | Who | Where |
 | --- | --- | --- |
-| Talking, proposing, countering, accepting | **LLM**: 3 separate calls per round (ATC, PILOT, GROUND), each with its own system prompt and only its own facts | `src/negotiate.js` `callAgent` |
-| Parsing replies (JSON only, tolerant of fences, bad shape becomes `INVALID`) | plain code | `parseReply` |
-| Deciding if a consensus is accepted: runway slot valid, slot clear of wake turbulence (at least 2 min behind any heavy arrival), delay within fuel margin, gate free at least 20 min before arrival (workbook "Gate change notice"), arrival before crew shift end | **plain code** | `checkProposal` |
-| Passenger connection (soft): at gate = scheduled arrival + delay + real TAXI_IN, compared with the connection time. Shown as a warning; never blocks a plan | plain code | `connectionStatus` |
-| Max 3 rounds (one message per agent per round), then earliest slot/gate that passes the checker; if none, `ESCALATE` | **plain code** | `fallback`, `runNegotiation` |
-| Final approval | **human** | Approve button |
-| Scoring against truth | plain code (`ground_truth`) | `scripts/evaluate.js` only |
+| Proposing, countering, accepting | **LLM**, 3 separate calls per round, each with only its own facts | `src/prompts.js`, `api/agent.js` |
+| Parsing replies (JSON only; bad shape becomes `INVALID`) | plain code | `parseReply` in `src/negotiate.js` |
+| Accepting a plan: slot offered, wake gap, fuel, gate free 20 min before arrival, crew duty | **plain code** | `checkProposal`, `ruleChecks` in `src/checker.js` |
+| Passenger connection (soft: warning only, never blocks) | plain code | `connectionStatus` |
+| 3-round limit, fallback, escalation, reason text | **plain code** | `runNegotiation`, `fallback` |
+| Building a scenario from any CSV row | plain code | `src/scenarioFromRow.js` |
+| Final decision | **human** | Approve / Reject / take over |
 
-Outcomes: **CONSENSUS** (all three agree on delay, GROUND names a gate, checker passes), **FALLBACK** (no accepted consensus in 3 rounds, rule-based pick), **ESCALATE** (nothing is feasible, a human decides).
+**Stack:** Vue 3 + Vite + Bootstrap 5.3 (custom dark theme, Hanken Grotesk / JetBrains Mono) · one Vercel serverless function · Anthropic Claude via `@anthropic-ai/sdk` · no database (scenarios are JSON; the log is a client-side download).
 
-An agent's "I accept" never counts on its own. A consensus the checker blocks is logged, its violation codes (`SLOT`, `WAKE`, `FUEL`, `GATE`, `CREW`) are fed back to the agents, and the next round starts.
+**Security:** `/api/agent` never accepts prompt text. The browser sends only a role, a scenario reference and the negotiation so far; the server rebuilds the scenario, sanitises the history and recomputes every checker verdict before building the prompt. So the endpoint is not a general Claude proxy and verdicts cannot be forged. Model and `max_tokens` (300) are fixed server-side. There is no rate limit, so set a spending limit on the API key.
 
-Passenger connections are a **soft** constraint on purpose. Fuel, gate and crew limits are safety limits, so the checker enforces them. A missed connection is a passenger-impact trade-off, so it is shown to the agents and to the human approver (`CONNECTION MISSED` badge, plus the at-gate vs departure time in the outcome) but never blocks a safe plan. With the current synthetic connection times, a hard rule would make S2, S4 and S5 infeasible even at their earliest safe slot.
+## Setup (about 2 minutes)
 
-`ground_truth` and the full scenario object are never sent to an agent. `factsFor()` builds each agent's prompt from selected fields, including a `real_row` picked from `scenario.source`:
+**Prerequisites:** Node.js **20.19+ or 22.12+**, an Anthropic API key, and a Vercel account (free; `vercel dev` asks you to log in and link a project on first run).
 
-- **ATC**: ORIGIN_AIRPORT, DESTINATION_AIRPORT, SCHEDULED_ARRIVAL, ARRIVAL_DELAY, WEATHER_DELAY, AIR_SYSTEM_DELAY, TAXI_IN, plus runway slots, heavy arrivals and the wake separation minimum
-- **PILOT**: DISTANCE, SCHEDULED_TIME, AIR_TIME, DEPARTURE_DELAY, ARRIVAL_DELAY, WEATHER_DELAY, LATE_AIRCRAFT_DELAY, plus fuel, reserve, crew shift end, next connection
-- **GROUND**: AIRLINE, FLIGHT_NUMBER, TAIL_NUMBER, SCHEDULED_ARRIVAL, AIRLINE_DELAY, LATE_AIRCRAFT_DELAY, TAXI_IN, plus gates, next connection
+```bash
+git clone https://github.com/eujean-s/agents-app.git
+cd agents-app
+npm install
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env   # your key; .env is git-ignored
+npx vercel dev                               # app + /api/agent on http://localhost:3000
+```
 
-## Real vs assumed data
+Open http://localhost:3000, pick **S1**, press **Run negotiation**. Try **S6** for an escalation, or **Custom** to paste any `flights.csv` row.
 
-Each of the 8 scenarios in `src/data/scenarios.json` comes from a real row of the BTS 2015 flights dataset (`csv_row` is the row number).
+Optional, in a second terminal:
 
-| | Fields |
-| --- | --- |
-| **Real** (BTS 2015) | everything in `source` (airline, flight number, tail number, airports, scheduled/actual times, all delay columns, distance, taxi, air time), plus the flight label, date and scheduled arrival |
-| **Assumed / synthetic** | runway slots (generated around the real delay), heavy arrivals for wake separation (S1, S3, S5), fuel on board, minimum reserve, gate ids and free times, crew shift end, next connection |
-
-| Scenario | Flight | csv_row | Truth |
-| --- | --- | --- | --- |
-| S1 | AA 2229 TUS-DFW | 301084 | feasible (earliest slot wake-blocked) |
-| S2 | MQ 3167 BNA-LGA | 53082 | feasible |
-| S3 | UA 646 ORD-EWR | 12623 | feasible (earliest slot wake-blocked) |
-| S4 | WN 1998 SAN-DEN | 231158 | feasible |
-| S5 | DL 795 GRR-MSP | 115901 | feasible (earliest slot wake-blocked) |
-| S6 | OO 2752 SAT-PHX | 114697 | infeasible (FUEL, GATE) |
-| S7 | US 561 PHX-LAS | 34785 | infeasible (FUEL, GATE) |
-| S8 | AS 37 MSP-SEA | 121629 | infeasible (CREW, GATE) |
-
-Wake separation: S1, S3 and S5 each have one synthetic heavy arrival placed 1 minute before what used to be their earliest safe slot, so ATC has to skip that slot. `ground_truth` for those three was recomputed with the same rules; S6-S8 are unchanged.
-
-So the *scenarios* are grounded in real delays, but the *constraints* that make them feasible or not are my assumptions. This demonstrates the negotiation and safety-check pattern, not real operational feasibility.
+```bash
+node scripts/evaluate.js 3                         # every scenario 3x against ground truth (uses the API)
+node scripts/impact.js path/to/flights.csv 500     # impact measures, plain code, no API calls
+```
 
 ## Evaluation
 
-`node scripts/evaluate.js 3` ran every scenario 3 times (24 runs, model `claude-sonnet-5-5`, max 3 rounds, 20 min gate notice). A run is a mismatch if a feasible scenario ends on a plan outside `ground_truth.safe_options`, or an infeasible scenario does not end in ESCALATE.
+`node scripts/evaluate.js 3`: every scenario 3 times (24 runs, `claude-sonnet-5-5`, max 3 rounds, 20 min gate notice). A run is a mismatch if a feasible scenario ends outside `ground_truth.safe_options`, or an infeasible one does not end in ESCALATE.
 
-- Consensus rate on feasible scenarios (S1-S5): **15/15**, in **1.8 rounds on average** (limit 3)
-- Checker-blocked proposals: **0**
-- Fallback used: **0**
-- Passenger connection missed (soft warning): **12 of 15 plans**. The earliest safe slot already misses the connection in S2-S5 (in S3 wake separation removes the slot that would have protected it), so this is a human decision, not a negotiation failure
-- Correct escalations (S6-S8): **9/9**
-- Mismatches vs ground truth: **0/24**
+- Consensus on S1-S5: **15/15** in **1.8 rounds** on average · checker-blocked proposals: **0** · fallback used: **0**
+- Correct escalations on S6-S8: **9/9** · mismatches: **0/24**
+- Passenger connection missed (soft warning): **12 of 15 plans**. In S2-S5 even the earliest safe slot misses it, so it is a human trade-off, not a negotiation failure.
 
-Per-scenario breakdown: see the table printed by the script (rerun to reproduce; LLM output varies between runs).
+**Caveats.** N=3 is small and LLM output varies between runs. The checker enforces the same rules `ground_truth` was computed with, so 0 mismatches shows the safety net holds; it is **not** independent validation.
 
-**JSON field order matters.** The first wake-separation run got 10/15 consensus, 5 fallbacks and 9 unparseable replies. The reply schema put `delay_min` before `message`, so ATC committed to a slot (e.g. 10) and only then noticed in its message that the slot was wake-blocked ("proposing 20 instead"). The other agents followed the message, the numbers no longer matched, and the round was lost. Putting `message` first, so the agent reasons before it commits to numbers, fixed this (14/15, 0 errors).
+### Where it fails
 
-Caveats: N=3 is a small sample; the 15/15 is a single evaluation run, and LLM output varies between runs, so rerun it yourself. The checker enforces the same rules `ground_truth` was computed with, so "0 mismatches" means the safety net holds. It is not an independent validation.
+- **S6 is infeasible because of my numbers, not reality.** The real flight landed 112 min late; my assumed fuel leaves 40 min of holding and every runway slot is beyond it. The agents escalate correctly but reason about "diverting", an option the model does not have; only the plain-code fallback turns that into a clean ESCALATE.
+- **LLM agreement is not safety.** In earlier runs the agents reached consensus on unsafe S7 plans (the checker blocked 1-3 per run). The latest run had none: that is run-to-run variation, not a fix.
+- **Agents anchor on real numbers.** ATC sometimes cites the recorded delay ("matching the ~112 min delay") instead of what is safe.
+- **Agent text can contradict the checker.** In one S1 run the pilot said the connection was "still at risk" while the checker showed it protected. That is why agent text is labelled unverified.
 
-## S6: the honest failure case
+## Impact
 
-S6 (OO 2752, SAT-PHX) is infeasible only because of my synthetic numbers, and it is the weakest point of the demo:
+`scripts/impact.js` (plain code, reproducible): every 717th row of `flights.csv` (358,774 rows, 500 sampled) is turned into a scenario with the same builder as the Custom option.
 
-- The real BTS row shows this flight **did land**, 112 minutes late. My assumed fuel (85 min, 45 reserve) leaves a 40-minute margin, and the earliest runway slot (+100) and the first free gate (+100) both lie beyond it. The "infeasible" verdict says more about my assumptions than about the real flight.
-- The escalation was right for the wrong kind of reason. The agents agree it is infeasible, but they conclude "divert to an alternate", which is an option the model does not have. Only the plain-code fallback turns that into a clean `ESCALATE` for a human.
-- In S7 the agents reached a consensus on an unsafe plan in earlier evaluation runs (the checker blocked 1 to 3 per run); in the latest run (20 min notice, 3 rounds) none were blocked, so this is run-to-run variation, not a fix. That is the point of the checker, and also evidence that LLM agreement is not safety.
-- ATC anchors on the real delay (S6: "matching the recorded ~112 min delay"). Agents lean on real-row numbers, which can pull them toward what happened rather than what is safe.
-
-## Operational limits (source)
-
-From `challenge2_operational_constraints.xlsx` (organisers' synthetic planning limits): gate change notice at least 20 min before arrival; wake separation Heavy follows Heavy = 120 s (used as 2 min); fuel spare 45 min of holding. Scenario gate `free_from_min` values were moved 20 min earlier when the 20 min notice was adopted, so each scenario's `ground_truth` is unchanged.
-
-## Cost of delay (sourced baseline)
-
-| Figure | Value | Source |
+| Measure | 500 real flights | S1-S8 |
 | --- | --- | --- |
-| Average cost of aircraft block time (taxi + airborne), US passenger airlines, 2024 | **$100.76 per minute** | [Airlines for America, U.S. Passenger Carrier Delay Costs](https://airlines.org/dataset/u-s-passenger-carrier-delay-costs/) |
-| Total annual cost of US flight delay (airlines, passengers, lost demand, indirect), 2019 | **about $33 billion** | FAA/NEXTOR estimate as cited by [Airlines for America](https://www.airlines.org/dataset/u-s-) |
-| Same study on 2007 data: $8.3 B airlines, $16.7 B passengers, $32.9 B total | | [FAA-commissioned Total Delay Impact Study (BTS)](https://rosap.ntl.bts.gov/view/dot/6234) |
-
-**How this is used.** Status quo: ATC, pilot and ground staff coordinate by phone and manual updates, so a disrupted flight waits while each party checks its own limits. Cost of that wait at the A4A rate = delay minutes x $100.76. This tool's measurable output is the arrival delay it settles on and how many rounds it needs (1.8 on average here). **It does not yet measure minutes saved against a real manual process**, so no dollar saving is claimed. The A4A rate covers airline operating cost only; passenger time and missed connections are not included. Running cost: about 3 LLM calls per round, 1.8 rounds on average (roughly 5-6 calls of at most 300 output tokens per disruption).
-
-### Before / after (estimate, not a measured saving)
-
-Real BTS arrival delay vs the earliest plan that passes the checker under this project's synthetic limits:
-
-| Scenario | Flight | Real arrival delay (min) | Earliest safe plan (min) |
-| --- | --- | --- | --- |
-| S1 | AA 2229 TUS-DFW | 83 | 20 (B10) |
-| S2 | MQ 3167 BNA-LGA | 134 | 50 (C17) |
-| S3 | UA 646 ORD-EWR | 26 | **40** (D24): worse than reality |
-| S4 | WN 1998 SAN-DEN | 67 | 40 (A3) |
-| S5 | DL 795 GRR-MSP | 127 | 60 (B10) |
-| S6-S8 | | 112 / 328 / 70 | none: ESCALATE to a human |
-
-This is **not like-for-like**: the real delay includes late departure and causes my model does not represent, and the limits (slots, gates, fuel) are synthetic. S3 shows the comparison can go the other way. The honest claim is narrower: given the same constraints, the agents settle on a checked plan in 1.8 rounds on average and never on an unsafe one, instead of a sequence of phone calls. The time saved per disruption was not measured against a real manual process.
-
-## Impact measures (`scripts/impact.js`)
-
-Plain code, no LLM calls, reproducible: every 717th row of `flights.csv` (358,774 rows, 500 sampled, 0 skipped) is turned into a scenario with the same builder as the app's Custom option, then compared against simple stand-ins for today's process.
-
-| Measure | 500 real flights | Curated S1-S8 |
-| --- | --- | --- |
-| **Resolved automatically** (checked plan for the duty manager to approve) | **434/500 (86.8%)** | 5/8 |
+| **Resolved automatically** (checked plan to approve) | **434/500 (86.8%)** | 5/8 |
 | **Escalated** to the duty manager | **66/500 (13.2%)** | 3/8 |
-| Single-party plan (ATC's earliest slot + first free gate, no cross-check) breaks a rule | 500/500 (GATE 500, WAKE 321, FUEL 40) | 8/8 |
-| Delay saved vs a cautious planner taking the latest safe slot | mean 10 min (about $1,005 at $100.76/min) | mean 9 min |
+| Single-party plan (ATC's earliest slot + first free gate, no cross-check) breaks a rule | 500/500 | 8/8 |
+| Delay saved vs a cautious planner taking the latest safe slot | mean 10 min (about $1,005) | mean 9 min |
 
-**How much each number is worth:**
+**What each number is worth:**
 
-- **Resolved vs escalated is the meaningful result.** Whether a flight can be resolved depends on its real recorded weather and air-system delay against the workbook's fuel rule (45 min spare holding). Claim: on 500 real disrupted flights, the tool produced a safety-checked plan for 87% and sent 13% to the duty manager. The runway slots and gates behind it are still synthetic.
-- **"Single-party plan breaks a rule: 100%" is built into the scenario generator, not a finding.** The generator opens the first gate when the first slot arrives, so with the 20 min gate notice the earliest slot always fails GATE; it also places a heavy arrival just before the first slot at hubs (the 321 WAKE failures). The curated scenarios were designed the same way. It only shows that the checker catches these conflicts, not how often they happen in reality.
-- **"10 min / $1,005 saved" is an illustration, not a measured saving.** It follows from the assumed slot spacing and the 45 min fuel limit, and "cautious planner = latest safe slot" is my choice of baseline.
-- **Not measured:** how long phone coordination takes today. Without that baseline, the time saved per disruption cannot be stated.
+- **Resolved vs escalated is the meaningful result.** It depends on each flight's real recorded weather and air-system delay against the workbook's fuel rule. Claim: *on 500 real disrupted flights, the tool produced a safety-checked plan for 87% and sent 13% to the duty manager.* The slots and gates behind it are synthetic.
+- **The 100% single-party failure rate is built into the scenario generator**, not a finding: the first gate opens when the first slot arrives, so with 20 min notice the earliest slot always fails GATE. It shows the checker catches the conflict, not how often it happens in reality.
+- **"10 min / $1,005 saved" is an illustration**, driven by the assumed slot spacing and fuel limit, against a baseline I chose.
+- **Not measured:** how long phone coordination takes today. Without that baseline, time saved per disruption cannot be stated.
+
+**Delay cost references:** $100.76 per block minute, US passenger airlines 2024 ([A4A](https://airlines.org/dataset/u-s-passenger-carrier-delay-costs/)); about $33 B a year total US delay cost, 2019 (FAA/NEXTOR via [A4A](https://www.airlines.org/dataset/u-s-)); $32.9 B in 2007, of which $8.3 B airlines and $16.7 B passengers ([FAA Total Delay Impact Study](https://rosap.ntl.bts.gov/view/dot/6234)).
+
+## Data: real vs assumed
+
+| | Source |
+| --- | --- |
+| **Real** | Flight, route, date, scheduled and actual times, all delay causes, taxi times: BTS 2015 rows (8 curated scenarios, `csv_row` = row number; or any pasted `flights.csv` row) |
+| **Rules** (organisers' `challenge2_operational_constraints.xlsx`, synthetic planning limits) | Gate change notice 20 min; Heavy-follows-Heavy wake spacing 120 s; 30 min final reserve + 45 min spare holding; 13 h crew duty; per-airport runway movements, spare gates, turnaround |
+| **Assumed by me** | Runway slots offered, heavy arrivals, gate IDs and free times, fuel on board for curated scenarios (100 / 45 min, before the workbook was released), crew report time, passenger connection times |
+
+| Scenario | Flight | Truth |
+| --- | --- | --- |
+| S1 | AA 2229 TUS-DFW | feasible (earliest slot wake-blocked) |
+| S2 | MQ 3167 BNA-LGA | feasible |
+| S3 | UA 646 ORD-EWR | feasible (earliest slot wake-blocked) |
+| S4 | WN 1998 SAN-DEN | feasible |
+| S5 | DL 795 GRR-MSP | feasible (earliest slot wake-blocked) |
+| S6 | OO 2752 SAT-PHX | infeasible (FUEL, GATE) |
+| S7 | US 561 PHX-LAS | infeasible (FUEL, GATE) |
+| S8 | AS 37 MSP-SEA | infeasible (CREW, GATE) |
+
+The *scenarios* are grounded in real delays; the *constraints* that make them feasible or not are assumptions. This demonstrates the negotiation and safety-check pattern, not real operational feasibility. Custom rows treat the whole delay as airborne holding, so long-delay rows escalate more often than they would in practice.
+
+## Challenges overcome
+
+- **JSON field order broke negotiations.** The first wake-separation run got 10/15 consensus and 9 unparseable replies: with `delay_min` before `message` in the reply schema, ATC committed to a wake-blocked slot and only then "changed its mind" in the text, so the numbers stopped matching. Putting `message` first (reason, then commit) fixed it: 14/15, 0 errors.
+- **The rules changed mid-hackathon.** The organisers' update added a 20 min gate change notice, which made 4 of 5 feasible scenarios infeasible overnight. Rather than quietly keep the old rule, I adopted the official one and shifted the synthetic gate times by 20 min, so each scenario's ground truth is unchanged under the new rule (verified for all 8).
+- **The public API was a free Claude proxy.** The first version forwarded any prompt. Prompts are now built server-side from a scenario reference, and checker lines are recomputed, so neither prompts nor verdicts can be injected.
+- **Hard-coded demo vs real input.** The organisers' brief says "pick any row". A plain-code builder now turns any `flights.csv` row into a scenario using the workbook, with every remaining assumption listed per row.
+- **Being honest about my own numbers.** The impact script's 100% figure looked great until it became clear it was built into the generator; the README says so instead of claiming it.
+
+## What's next (with 3 more weeks)
+
+- **Real constraints, not synthetic ones:** airport operational data (gate schedules, slot allocations) and FAA ASPM arrival rates, so feasibility reflects real operations.
+- **Each party runs its own agent on its own data,** on its own infrastructure, sharing only offers: the real version of the information separation this demo simulates.
+- **Measure the status quo:** time real phone coordination with ops staff to get the before/after baseline this project lacks.
+- **More of the brief's constraints:** taxiway blockage, turbulence, ground-crew overtime, turnaround cost, and multi-flight conflicts competing for the same slots.
+- **Production hardening:** authentication, rate limiting, audit storage for the consensus logs.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
