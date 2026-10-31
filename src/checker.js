@@ -66,20 +66,41 @@ export const FACTS = {
   }),
 }
 
+// Every hard rule with its verdict and the numbers behind it, so a human can verify the check.
+export function ruleChecks(s, p) {
+  const delay = p.delay_min
+  const gate = s.gates.find((g) => g.id === p.gate)
+  const arrival = s.scheduled_arrival_min + delay
+  const gap = gapToLeaderMin(s, delay)
+  const hold = usableHoldMin(s)
+  const gateLatest = arrival - GATE_CHANGE_NOTICE_MIN
+  return [
+    { rule: 'SLOT', ok: s.runway_slots_delay_min.includes(delay),
+      detail: `+${delay} ${s.runway_slots_delay_min.includes(delay) ? 'is' : 'is not'} an offered slot` },
+    { rule: 'WAKE', ok: slotClearOfWake(s, delay),
+      detail: gap === null ? 'no heavy arrival ahead' : `${gap} min behind heavy, needs ${WAKE_SEPARATION_MIN}` },
+    { rule: 'FUEL', ok: delay <= hold, detail: `${delay} min delay vs ${hold} min usable holding` },
+    { rule: 'GATE', ok: !!gate && gate.free_from_min <= gateLatest,
+      detail: gate ? `${gate.id} free ${hhmm(gate.free_from_min)}, needed by ${hhmm(gateLatest)}` : `gate ${p.gate ?? '-'} unknown` },
+    { rule: 'CREW', ok: arrival <= s.crew_shift_end_min, detail: `arrive ${hhmm(arrival)}, duty ends ${hhmm(s.crew_shift_end_min)}` },
+  ]
+}
+
 // Plain-code feasibility check against the full scenario.
 export function checkProposal(s, p) {
-  const violations = []
-  const delay = p && p.delay_min
-  const gate = p && s.gates.find((g) => g.id === p.gate)
-  if (!Number.isFinite(delay)) return { ok: false, violations: ['SLOT'], warnings: [] }
-  const arrival = s.scheduled_arrival_min + delay
-  if (!s.runway_slots_delay_min.includes(delay)) violations.push('SLOT')
-  if (!slotClearOfWake(s, delay)) violations.push('WAKE')
-  if (delay > usableHoldMin(s)) violations.push('FUEL')
-  if (!gate || gate.free_from_min > arrival - GATE_CHANGE_NOTICE_MIN) violations.push('GATE')
-  if (arrival > s.crew_shift_end_min) violations.push('CREW')
+  if (!p || !Number.isFinite(p.delay_min)) return { ok: false, violations: ['SLOT'], warnings: [] }
+  const violations = ruleChecks(s, p).filter((r) => !r.ok).map((r) => r.rule)
   const connection = connectionStatus(s, p)
   return { ok: violations.length === 0, violations, warnings: connection.missed ? ['CONNECTION_MISSED'] : [], connection }
+}
+
+// Per offered slot: the best gate and what (if anything) blocks it. Drives the slot map.
+export function slotMap(s) {
+  return [...s.runway_slots_delay_min].sort((a, b) => a - b).map((delay_min) => {
+    const options = s.gates.map((g) => ({ gate: g.id, violations: checkProposal(s, { delay_min, gate: g.id }).violations }))
+    const best = options.reduce((a, b) => (b.violations.length < a.violations.length ? b : a))
+    return { delay_min, ok: best.violations.length === 0, gate: best.gate, violations: best.violations }
+  })
 }
 
 // Soft constraint: never blocks a plan, but is shown to the agents and the human approver.

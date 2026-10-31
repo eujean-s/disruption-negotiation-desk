@@ -2,15 +2,19 @@
 import { ref, computed, watch } from 'vue'
 import scenarios from './data/scenarios.json'
 import { runNegotiation, MAX_ROUNDS, ROLES } from './negotiate.js'
-import { WAKE_SEPARATION_MIN, GATE_CHANGE_NOTICE_MIN, usableHoldMin, hhmm } from './checker.js'
+import { WAKE_SEPARATION_MIN, GATE_CHANGE_NOTICE_MIN, usableHoldMin, hhmm, ruleChecks, slotMap, FACTS } from './checker.js'
 import { parseFlightRow, scenarioFromRow } from './scenarioFromRow.js'
 
 const selectedId = ref(scenarios[0].id)
 const events = ref([])
 const outcome = ref(null)
 const running = ref(false)
-const approved = ref(false)
-const approvedAt = ref(null)
+// Human decision on the outcome: null until the duty manager approves or rejects.
+const decision = ref(null) // { verdict: 'APPROVED' | 'REJECTED', note, at }
+const rejectNote = ref('')
+const rejecting = ref(false)
+const startedAt = ref(null)
+const elapsedS = ref(null)
 
 // Any flights.csv row can be pasted in and becomes a scenario (limits from the constraints workbook).
 const rowText = ref('2015,1,1,4,AA,8,N368AA,HNL,DFW,1745,1933,108,15,1948,445,446,420,3784,0648,11,0510,0659,109,0,0,,1,0,0,108,0')
@@ -63,6 +67,18 @@ const rounds = computed(() => {
   }
   return [...by.entries()].map(([round, items]) => ({ round, items }))
 })
+// Plain-code view of every offered slot: is any gate usable, and if not, what blocks it.
+const slots = computed(() => (scenario.value ? slotMap(scenario.value) : []))
+const agentFacts = (role) => JSON.stringify(FACTS[role](scenario.value), null, 1)
+
+const status = computed(() => {
+  if (running.value) return { text: `running · round ${rounds.value.length || 1}/${MAX_ROUNDS}`, cls: 'live' }
+  if (decision.value) return { text: decision.value.verdict.toLowerCase().replace('_', ' '), cls: decision.value.verdict === 'REJECTED' ? 'bad' : 'ok' }
+  if (outcome.value) return { text: 'awaiting human decision', cls: 'warn' }
+  return { text: 'idle', cls: '' }
+})
+const messageCount = computed(() => events.value.filter((e) => e.kind === 'message').length)
+
 const nextRole = computed(() => ROLES[events.value.filter((e) => e.kind === 'message').length % ROLES.length])
 
 const roleMeta = {
@@ -89,9 +105,9 @@ const typeBadge = {
   REJECT: 'st-bad', ESCALATE: 'st-bad', INVALID: 'st-muted', ERROR: 'st-muted',
 }
 
-function approve() {
-  approved.value = true
-  approvedAt.value = new Date().toISOString()
+function decide(verdict) {
+  decision.value = { verdict, note: rejectNote.value.trim() || null, at: new Date().toISOString() }
+  rejecting.value = false
 }
 
 // Traceable consensus log: every message, checker verdict, outcome and approval as JSON.
@@ -105,8 +121,8 @@ function downloadLog() {
     max_rounds: MAX_ROUNDS,
     events: events.value,
     outcome: outcome.value,
-    human_approved: approved.value,
-    approved_at: approvedAt.value,
+    decided_in_s: elapsedS.value,
+    human_decision: decision.value,
     exported_at: new Date().toISOString(),
   }
   const url = URL.createObjectURL(new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' }))
@@ -118,8 +134,10 @@ function downloadLog() {
 }
 
 function resetRun() {
-  approved.value = false
-  approvedAt.value = null
+  decision.value = null
+  rejectNote.value = ''
+  rejecting.value = false
+  elapsedS.value = null
   events.value = []
   outcome.value = null
 }
@@ -130,10 +148,12 @@ async function run() {
   if (!scenario.value) return
   running.value = true
   resetRun()
+  startedAt.value = performance.now()
   const result = await runNegotiation(scenario.value, {
     onEvent: (e) => (e.kind === 'outcome' ? (outcome.value = e) : events.value.push(e)),
   })
   outcome.value = result
+  elapsedS.value = Math.round((performance.now() - startedAt.value) / 100) / 10
   running.value = false
 }
 </script>
@@ -147,9 +167,8 @@ async function run() {
           <div class="small text-muted">ATC · Pilot · Ground agents negotiate. Plain-code rules decide. You approve.</div>
         </div>
         <div class="d-flex gap-2 small">
-          <span class="pill">3 separate agents</span>
-          <span class="pill">max <span class="mono">{{ MAX_ROUNDS }}</span> rounds</span>
-          <span class="pill">rule checker</span>
+          <span class="pill status" :class="'status-' + status.cls"><span class="dot"></span>{{ status.text }}</span>
+          <span class="pill">3 agents · max <span class="mono">{{ MAX_ROUNDS }}</span> rounds</span>
         </div>
       </div>
     </div>
@@ -197,6 +216,26 @@ async function run() {
               </div>
             </div>
           </div>
+
+          <div class="mt-3">
+            <div class="eyebrow mb-2">Slot map <span class="text-muted fw-normal text-none">· computed by the checker, not the agents</span></div>
+            <div class="slotmap">
+              <div v-for="sl in slots" :key="sl.delay_min" class="slot"
+                   :class="[sl.ok ? 'slot-ok' : 'slot-bad', outcome?.proposal?.delay_min === sl.delay_min ? 'slot-chosen' : '']">
+                <div class="mono slot-delay">+{{ sl.delay_min }}</div>
+                <div class="small mono">{{ hhmm(scenario.scheduled_arrival_min + sl.delay_min) }}</div>
+                <div class="slot-verdict mono">
+                  <template v-if="sl.ok">✓ {{ sl.gate }}</template>
+                  <template v-else>✕ {{ sl.violations.join(' ') }}</template>
+                </div>
+              </div>
+            </div>
+            <div class="small text-muted mt-1">
+              <span v-if="slots.some((x) => x.ok)">Earliest safe: <span class="mono">+{{ slots.find((x) => x.ok).delay_min }} · {{ slots.find((x) => x.ok).gate }}</span>.</span>
+              <span v-else class="text-danger">No offered slot is safe: expect ESCALATE.</span>
+              Hover a rule code in the log for its meaning.
+            </div>
+          </div>
         </template>
       </div>
     </section>
@@ -224,6 +263,13 @@ async function run() {
                   </span>
                 </div>
                 <div class="small">{{ e.message }}</div>
+                <div class="d-flex flex-wrap gap-3 mt-1 meta">
+                  <span>agent reasoning · unverified</span>
+                  <details>
+                    <summary>what {{ roleMeta[e.role].label }} saw</summary>
+                    <pre class="mono facts">{{ agentFacts(e.role) }}</pre>
+                  </details>
+                </div>
               </div>
             </div>
             <div v-else class="check" :class="e.ok ? 'check-ok' : 'check-bad'">
@@ -231,9 +277,12 @@ async function run() {
               <div class="small">
                 <strong>Checker {{ e.ok ? 'passed' : 'blocked' }}</strong>
                 <span class="mono ms-1">+{{ e.proposal.delay_min }} min · {{ e.proposal.gate }}</span>
-                <div v-if="!e.ok" class="mt-1 d-flex flex-wrap gap-1">
-                  <span v-for="v in e.violations" :key="v" class="rule-chip" :title="ruleText[v]"><span class="mono">{{ v }}</span> {{ ruleText[v] }}</span>
-                </div>
+                <span class="meta ms-2">verified by code</span>
+                <ul class="rules">
+                  <li v-for="c in ruleChecks(scenario, e.proposal)" :key="c.rule" :class="c.ok ? 'r-ok' : 'r-bad'" :title="ruleText[c.rule]">
+                    <span class="mono r-code">{{ c.ok ? '✓' : '✕' }} {{ c.rule }}</span> {{ c.detail }}
+                  </li>
+                </ul>
                 <div v-if="e.warnings.length" class="mt-1 warn-note">
                   Connection missed (at gate {{ e.connection.at_gate }}, departs {{ e.connection.departs }}): warning only
                 </div>
@@ -271,13 +320,39 @@ async function run() {
                 Connection: at gate {{ outcome.connection.at_gate }}, departs {{ outcome.connection.departs }} →
                 <strong>{{ outcome.connection.missed ? 'missed (you decide)' : 'protected' }}</strong>
               </p>
-              <p v-if="outcome.reason" class="small mb-3"><strong>Why:</strong> {{ outcome.reason }}</p>
+              <p v-if="outcome.reason" class="small mb-2"><strong>Why:</strong> {{ outcome.reason }}</p>
+
+              <ul v-if="outcome.proposal" class="rules mb-3">
+                <li v-for="c in ruleChecks(scenario, outcome.proposal)" :key="c.rule" :class="c.ok ? 'r-ok' : 'r-bad'">
+                  <span class="mono r-code">{{ c.ok ? '✓' : '✕' }} {{ c.rule }}</span> {{ c.detail }}
+                </li>
+              </ul>
+
+              <div class="timing mono mb-3">
+                decided in {{ elapsedS ?? '…' }} s · round {{ outcome.round }}/{{ MAX_ROUNDS }} · {{ messageCount }} messages
+              </div>
+
+              <div v-if="decision" class="decision mb-2" :class="decision.verdict === 'REJECTED' ? 'decision-bad' : 'decision-ok'">
+                <div class="fw-semibold small">{{ decision.verdict === 'APPROVED' ? 'Approved' : decision.verdict === 'REJECTED' ? 'Rejected' : 'Taken over' }} by duty manager
+                  <span class="mono text-muted ms-1">{{ new Date(decision.at).toLocaleTimeString() }}</span></div>
+                <div v-if="decision.note" class="small text-muted">“{{ decision.note }}”</div>
+              </div>
 
               <div class="d-grid gap-2">
-                <button v-if="outcome.proposal" class="btn" :class="approved ? 'btn-quiet' : 'btn-primary'" :disabled="approved" @click="approve">
-                  {{ approved ? 'Approved ✓' : 'Approve plan' }}
-                </button>
-                <div v-if="approved" class="small text-muted text-center">Approved <span class="mono">{{ new Date(approvedAt).toLocaleTimeString() }}</span></div>
+                <template v-if="!decision">
+                  <template v-if="outcome.proposal">
+                    <button v-if="!rejecting" class="btn btn-primary" @click="decide('APPROVED')">Approve plan</button>
+                    <button v-if="!rejecting" class="btn btn-quiet btn-sm" @click="rejecting = true">Reject…</button>
+                    <template v-else>
+                      <input v-model="rejectNote" class="form-control form-control-sm" placeholder="Reason (goes in the log)" />
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-quiet btn-sm flex-fill reject-btn" @click="decide('REJECTED')">Confirm reject</button>
+                        <button class="btn btn-quiet btn-sm" @click="rejecting = false">Cancel</button>
+                      </div>
+                    </template>
+                  </template>
+                  <button v-else class="btn btn-primary" @click="decide('TAKEN_OVER')">I'll handle it manually</button>
+                </template>
                 <button class="btn btn-quiet btn-sm" @click="downloadLog">Download consensus log (JSON)</button>
               </div>
             </div>
@@ -317,7 +392,7 @@ async function run() {
 .st-bad { color: var(--bad); }
 .st-muted { color: var(--muted); }
 .plan-chip { font-size: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 0.3rem; padding: 0 0.4rem; }
-.check { display: flex; gap: 0.6rem; align-items: flex-start; border-radius: 0.5rem; padding: 0.55rem 0.8rem; margin: 0 0 0.5rem 3rem; border: 1px solid; }
+.check { display: flex; gap: 0.6rem; align-items: flex-start; border-radius: 0.5rem; padding: 0.55rem 0.8rem; margin: 0 0 0.5rem; border: 1px solid; }
 .check-ok { background: rgba(63, 185, 80, 0.08); border-color: rgba(63, 185, 80, 0.35); }
 .check-bad { background: rgba(248, 81, 73, 0.08); border-color: rgba(248, 81, 73, 0.35); }
 .check-ok .check-icon { color: var(--ok); }
@@ -333,5 +408,32 @@ async function run() {
 .outcome-bad { --oc: var(--bad); }
 .big { font-size: 1.5rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; }
 summary { cursor: pointer; list-style-position: inside; }
-@media (max-width: 575px) { .check { margin-left: 0; } }
+.text-none { text-transform: none; letter-spacing: 0; }
+.status { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--muted); }
+.status-live .dot { background: var(--warn); animation: pulse 1s infinite; }
+.status-warn .dot { background: var(--warn); }
+.status-ok .dot { background: var(--ok); }
+.status-bad .dot { background: var(--bad); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+.slotmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); gap: 0.5rem; }
+.slot { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.45rem 0.6rem; background: var(--bg); }
+.slot-delay { font-size: 1rem; font-weight: 500; }
+.slot-verdict { font-size: 0.72rem; margin-top: 0.15rem; }
+.slot-ok .slot-verdict { color: var(--ok); }
+.slot-bad .slot-verdict { color: var(--bad); }
+.slot-bad { opacity: 0.75; }
+.slot-chosen { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); opacity: 1; }
+.meta { font-size: 0.7rem; color: var(--muted); }
+.meta summary { cursor: pointer; }
+.facts { font-size: 0.68rem; background: var(--bg); border: 1px solid var(--border); border-radius: 0.4rem; padding: 0.5rem; margin: 0.35rem 0 0; max-height: 14rem; overflow: auto; white-space: pre-wrap; color: var(--fg); }
+.rules { list-style: none; padding: 0; margin: 0.35rem 0 0; font-size: 0.75rem; }
+.rules li { padding: 0.08rem 0; color: var(--fg); }
+.r-code { display: inline-block; min-width: 4.2rem; }
+.r-ok .r-code { color: var(--ok); }
+.r-bad .r-code { color: var(--bad); }
+.timing { font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.decision { border: 1px solid var(--border); border-left: 2px solid var(--ok); border-radius: 0.4rem; padding: 0.4rem 0.6rem; }
+.decision-bad { border-left-color: var(--bad); }
+.reject-btn { color: var(--bad); }
 </style>

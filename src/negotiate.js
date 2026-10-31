@@ -1,7 +1,7 @@
 // Three-agent negotiation (ATC / PILOT / GROUND). The LLM only talks;
 // checkProposal() and fallback() are plain code and have the final word.
 
-import { checkProposal, fallback, FACTS, usableHoldMin, connectionStatus } from './checker.js'
+import { checkProposal, fallback, FACTS, usableHoldMin, connectionStatus, slotMap } from './checker.js'
 
 export const ROLES = ['ATC', 'PILOT', 'GROUND']
 export const MAX_ROUNDS = 3 // brief: one turn = one message from each agent, consensus within 3 turns
@@ -92,12 +92,9 @@ function disagreement(msgs) {
   return msgs.map((m) => `${m.role} delay ${m.delay_min ?? '-'}${m.role === 'GROUND' ? ' gate ' + (m.gate ?? '-') : ''}`).join(', ')
 }
 
-// Rules that block at least one option in every slot/gate combination (why nothing is feasible).
+// What blocks each offered slot with its best gate: the same view as the UI's slot map.
 function blockingRules(s) {
-  const seen = new Set()
-  for (const delay_min of s.runway_slots_delay_min)
-    for (const g of s.gates) checkProposal(s, { delay_min, gate: g.id }).violations.forEach((v) => seen.add(v))
-  return [...seen].join(', ')
+  return slotMap(s).map((x) => `+${x.delay_min} ${x.violations.join('/')}`).join(', ')
 }
 
 // onEvent receives every message / checker verdict / outcome in order.
@@ -142,7 +139,7 @@ export async function runNegotiation(scenario, { onEvent = () => {}, baseUrl = '
     ? { kind: 'outcome', outcome: 'FALLBACK', proposal: fb, round: lastRound, blocked, connection: connectionStatus(scenario, fb),
         reason: `${why}. Fallback chose the earliest runway slot and gate that pass every checker rule.` }
     : { kind: 'outcome', outcome: 'ESCALATE', proposal: null, round: lastRound, blocked,
-        reason: `${why}. No runway slot and gate combination passes the checker (${blockingRules(scenario)}), so a human must decide.` }
+        reason: `${why}. No offered slot passes the checker (${blockingRules(scenario)}), so a human must decide.` }
   emit(out)
   return { ...out, log }
 }
