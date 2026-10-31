@@ -6,7 +6,7 @@
   --surface-2: #1a1f25;
   --border: #262c33;
   --fg: #e9edf1;
-  --muted: #7d8590;
+  --muted: #a3abb5; /* lightened from #7d8590 for contrast at small sizes */
   --accent: #5b8cff;
   --ok: #3fb950;
   --warn: #d29922;

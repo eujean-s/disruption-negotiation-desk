@@ -4,6 +4,7 @@ import scenarios from './data/scenarios.json'
 import { runNegotiation, MAX_ROUNDS, ROLES } from './negotiate.js'
 import { WAKE_SEPARATION_MIN, GATE_CHANGE_NOTICE_MIN, usableHoldMin, hhmm, ruleChecks, slotMap, FACTS } from './checker.js'
 import { parseFlightRow, scenarioFromRow } from './scenarioFromRow.js'
+import capacity from './data/airport_capacity.json'
 
 const selectedId = ref(scenarios[0].id)
 const events = ref([])
@@ -36,15 +37,51 @@ const scenario = computed(() =>
   selectedId.value === 'CUSTOM' ? customScenario.value : scenarios.find((s) => s.id === selectedId.value),
 )
 
-// Scenario-specific `interpretations` when present, plus the standing assumptions of this build.
-const assumptions = computed(() => !scenario.value ? [] : [
-  ...(scenario.value.interpretations || []),
-  scenario.value.data_note,
-  `Operational limits from challenge2_operational_constraints.xlsx (synthetic planning limits, per the organisers).`,
-  `Wake: a slot less than ${WAKE_SEPARATION_MIN} min (120 s, Heavy follows Heavy) behind a heavy arrival is unusable.`,
-  `Gate change notice: the gate must be free at least ${GATE_CHANGE_NOTICE_MIN} min before arrival.`,
-  'Usable holding = fuel on board minus the minimum reserve. Passenger connection is a warning only; it never blocks.',
-].filter(Boolean))
+// Assumptions in plain language, grouped by where each value comes from.
+const assumptionGroups = computed(() => {
+  const s = scenario.value
+  if (!s) return []
+  const r = s.source
+  const dest = r.DESTINATION_AIRPORT
+  const cls = capacity.airports[dest] || 'Non-hub'
+  const lim = capacity.classes[cls]
+  const slots = s.runway_slots_delay_min.map((d) => '+' + d).join(', ')
+  const gates = s.gates.map((g) => `${g.id} from ${hhmm(g.free_from_min)}`).join(', ')
+  const heavy = s.heavy_arrivals.map((h) => `a heavy aircraft lands ${h.at_delay_min} min after the scheduled time`)
+  const conn = s.next_connection.replace('Passenger connection departs', 'a passenger connection departs at')
+  return [
+    { title: 'Real (from the 2015 US flight record)', items: [
+      `Flight ${r.AIRLINE} ${r.FLIGHT_NUMBER}, ${r.ORIGIN_AIRPORT} to ${dest}, on ${s.date}.`,
+      `Scheduled to arrive at ${s.scheduled_arrival_label}; it actually arrived ${r.ARRIVAL_DELAY} min late.`,
+      `Recorded causes: ${r.WEATHER_DELAY} min weather, ${r.LATE_AIRCRAFT_DELAY} min late incoming aircraft, ${r.AIR_SYSTEM_DELAY} min air traffic system.`,
+      `Taxi from runway to gate took ${r.TAXI_IN} min.`,
+    ] },
+    { title: 'Assumed (made up for this demo)', items: [
+      s.custom
+        ? `Runway slots (${slots}): the first equals the weather and air-system delay, then one every ${s.runway_slots_delay_min[1] - s.runway_slots_delay_min[0]} min.`
+        : `ATC can offer these runway slots, in minutes of delay: ${slots}.`,
+      heavy.length ? `Traffic: ${heavy.join('; ')}.` : 'No heavy aircraft are arriving nearby.',
+      s.custom
+        ? `Free gates (${gates}) open up one turnaround apart.`
+        : `Free gates: ${gates}.`,
+      s.custom
+        ? `The crew reported for duty 60 min before departure.`
+        : `The aircraft carries ${s.fuel_on_board_min} min of fuel and must keep ${s.min_reserve_min} min in reserve, so it can wait at most ${usableHoldMin(s)} min. The crew must land by ${hhmm(s.crew_shift_end_min)}.`,
+      `${conn[0].toUpperCase() + conn.slice(1)}. Missing it is shown as a warning but never blocks a plan.`,
+    ] },
+    { title: 'Rules (from the organisers\' constraints workbook)', items: [
+      `A plane landing behind a heavy aircraft needs at least ${WAKE_SEPARATION_MIN} min (120 s) of spacing for wake turbulence.`,
+      `A gate must be free at least ${GATE_CHANGE_NOTICE_MIN} min before the plane arrives.`,
+      ...(s.custom ? [
+        `${dest} is treated as a ${cls.toLowerCase()}: ${lim.max_runway_ops_per_hour} runway movements per hour, ${lim.spare_gates_at_any_time} spare gates, ${lim.min_turnaround_min} min minimum turnaround.`,
+        `The aircraft lands with 45 min of spare holding fuel on top of a 30 min final reserve.`,
+        `Crew may be on duty for at most 13 hours, so they must land by ${hhmm(s.crew_shift_end_min)}.`,
+      ] : []),
+      'These limits are synthetic planning values provided by the organisers, not real airport data.',
+    ] },
+  ]
+})
+const assumptions = computed(() => assumptionGroups.value.flatMap((g) => g.items.map((i) => `${g.title}: ${i}`)))
 
 // Headline facts for the human (agents still only see their own slice).
 const keyFacts = computed(() => {
@@ -396,10 +433,15 @@ async function run() {
           </div>
 
           <details class="card" open>
-            <summary class="card-header eyebrow">Assumptions ({{ assumptions.length }})</summary>
-            <ul class="card-body small mb-0 ps-4">
-              <li v-for="(a, i) in assumptions" :key="i" class="mb-1">{{ a }}</li>
-            </ul>
+            <summary class="card-header eyebrow">Assumptions</summary>
+            <div class="card-body small">
+              <div v-for="g in assumptionGroups" :key="g.title" class="mb-3 last-mb-0">
+                <div class="group-title">{{ g.title }}</div>
+                <ul class="mb-0 ps-3">
+                  <li v-for="(a, i) in g.items" :key="i" class="mb-1">{{ a }}</li>
+                </ul>
+              </div>
+            </div>
           </details>
         </div>
       </aside>
@@ -411,31 +453,31 @@ async function run() {
 .app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 0; }
 .title { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
 .pill { border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.6rem; color: var(--muted); white-space: nowrap; }
-.eyebrow { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.eyebrow { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .fact { background: var(--bg); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem 0.75rem; height: 100%; }
-.fact-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.fact-label { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .fact-value { font-weight: 500; font-size: 0.85rem; word-break: break-word; }
 .empty { border: 1px dashed var(--border); border-radius: 0.5rem; padding: 1.5rem; text-align: center; }
-.round-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.06em; margin: 0.25rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
+.round-label { font-size: 0.8125rem; color: var(--muted); letter-spacing: 0.06em; margin: 0.25rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
 .round-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .msg { display: flex; gap: 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.65rem 0.8rem; margin-bottom: 0.5rem; }
-.avatar { flex: 0 0 2.25rem; height: 2.25rem; border-radius: 0.4rem; background: var(--bg); border: 1px solid var(--border); color: var(--fg); font-family: var(--mono); font-size: 0.68rem; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+.avatar { flex: 0 0 2.25rem; height: 2.25rem; border-radius: 0.4rem; background: var(--bg); border: 1px solid var(--border); color: var(--fg); font-family: var(--mono); font-size: 0.8125rem; font-weight: 500; display: flex; align-items: center; justify-content: center; }
 .thinking { opacity: 0.6; }
 .min-w-0 { min-width: 0; }
-.stance { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.04em; border-radius: 0.3rem; padding: 0.05rem 0.4rem; border: 1px solid currentColor; }
+.stance { font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; border-radius: 0.3rem; padding: 0.05rem 0.4rem; border: 1px solid currentColor; }
 .st-neutral { color: var(--fg); border-color: var(--border); }
 .st-ok { color: var(--ok); }
 .st-warn { color: var(--warn); }
 .st-bad { color: var(--bad); }
 .st-muted { color: var(--muted); }
-.plan-chip { font-size: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 0.3rem; padding: 0 0.4rem; }
+.plan-chip { font-size: 0.8125rem; background: var(--bg); border: 1px solid var(--border); border-radius: 0.3rem; padding: 0 0.4rem; }
 .check { display: flex; gap: 0.6rem; align-items: flex-start; border-radius: 0.5rem; padding: 0.55rem 0.8rem; margin: 0 0 0.5rem; border: 1px solid; }
 .check-ok { background: rgba(63, 185, 80, 0.08); border-color: rgba(63, 185, 80, 0.35); }
 .check-bad { background: rgba(248, 81, 73, 0.08); border-color: rgba(248, 81, 73, 0.35); }
 .check-ok .check-icon { color: var(--ok); }
 .check-bad .check-icon { color: var(--bad); }
 .check-icon { font-weight: 600; }
-.rule-chip { border: 1px solid rgba(248, 81, 73, 0.35); border-radius: 0.3rem; padding: 0 0.4rem; font-size: 0.75rem; color: var(--fg); }
+.rule-chip { border: 1px solid rgba(248, 81, 73, 0.35); border-radius: 0.3rem; padding: 0 0.4rem; font-size: 0.8125rem; color: var(--fg); }
 .rule-chip .mono { color: var(--bad); }
 .warn-note { color: var(--warn); }
 .outcome { border-top: 2px solid var(--oc); }
@@ -456,20 +498,20 @@ summary { cursor: pointer; list-style-position: inside; }
 .slotmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); gap: 0.5rem; }
 .slot { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.45rem 0.6rem; background: var(--bg); }
 .slot-delay { font-size: 1rem; font-weight: 500; }
-.slot-verdict { font-size: 0.72rem; margin-top: 0.15rem; }
+.slot-verdict { font-size: 0.8125rem; margin-top: 0.15rem; }
 .slot-ok .slot-verdict { color: var(--ok); }
 .slot-bad .slot-verdict { color: var(--bad); }
 .slot-bad { opacity: 0.75; }
 .slot-chosen { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); opacity: 1; }
-.meta { font-size: 0.7rem; color: var(--muted); }
+.meta { font-size: 0.8125rem; color: var(--muted); }
 .meta summary { cursor: pointer; }
-.facts { font-size: 0.68rem; background: var(--bg); border: 1px solid var(--border); border-radius: 0.4rem; padding: 0.5rem; margin: 0.35rem 0 0; max-height: 14rem; overflow: auto; white-space: pre-wrap; color: var(--fg); }
-.rules { list-style: none; padding: 0; margin: 0.35rem 0 0; font-size: 0.75rem; }
+.facts { font-size: 0.8125rem; background: var(--bg); border: 1px solid var(--border); border-radius: 0.4rem; padding: 0.5rem; margin: 0.35rem 0 0; max-height: 14rem; overflow: auto; white-space: pre-wrap; color: var(--fg); }
+.rules { list-style: none; padding: 0; margin: 0.35rem 0 0; font-size: 0.8125rem; }
 .rules li { padding: 0.08rem 0; color: var(--fg); }
 .r-code { display: inline-block; min-width: 4.2rem; }
 .r-ok .r-code { color: var(--ok); }
 .r-bad .r-code { color: var(--bad); }
-.timing { font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.timing { font-size: 0.8125rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 0.5rem; }
 .decision { border: 1px solid var(--border); border-left: 2px solid var(--ok); border-radius: 0.4rem; padding: 0.4rem 0.6rem; }
 .decision-bad { border-left-color: var(--bad); }
 .reject-btn { color: var(--bad); }
@@ -486,30 +528,32 @@ summary { cursor: pointer; list-style-position: inside; }
 .path { position: relative; width: 4.5rem; height: 1px; background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 8px); }
 .plane { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -55%); background: var(--bg); padding: 0 0.25rem; color: var(--fg); font-size: 0.9rem; }
 .hero-meta { flex: 1; min-width: 16rem; }
-.trigger { font-size: 0.68rem; color: var(--warn); border: 1px solid rgba(210, 153, 34, 0.45); border-radius: 0.3rem; padding: 0 0.35rem; }
+.trigger { font-size: 0.8125rem; color: var(--warn); border: 1px solid rgba(210, 153, 34, 0.45); border-radius: 0.3rem; padding: 0 0.35rem; }
 .fw-medium { font-weight: 500; }
-.tl { position: relative; height: 8.6rem; margin: 0 1.5rem 0.25rem; }
+.tl { position: relative; height: 9.6rem; margin: 0 1.5rem 0.25rem; }
 .tl-axis { position: absolute; left: 0; right: 0; top: 3.3rem; height: 1px; background: var(--border); }
 .tl-fuel { position: absolute; top: 0.2rem; bottom: 1.2rem; right: 0; border-left: 1px dashed var(--bad);
   background: repeating-linear-gradient(135deg, rgba(248, 81, 73, 0.07) 0 6px, transparent 6px 12px); }
-.tl-fuel-label { position: absolute; top: 0; left: 0.35rem; font-size: 0.65rem; color: var(--bad); white-space: nowrap; }
+.tl-fuel-label { position: absolute; top: 0; left: 0.35rem; font-size: 0.8125rem; color: var(--bad); white-space: nowrap; }
 .tl-slot { position: absolute; top: 1.35rem; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.2rem; cursor: default; }
-.tl-slot-label { font-size: 0.8rem; font-weight: 500; }
+.tl-slot-label { font-size: 0.8125rem; font-weight: 500; }
 .tl-dot { width: 0.85rem; height: 0.85rem; border-radius: 50%; border: 2px solid var(--c); background: var(--bg); }
 .is-ok { --c: var(--ok); }
 .is-bad { --c: var(--bad); }
 .is-ok .tl-dot { background: var(--ok); }
 .is-chosen .tl-dot { box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--fg); }
-.tl-slot-verdict { font-size: 0.65rem; color: var(--c); white-space: nowrap; }
+.tl-slot-verdict { font-size: 0.8125rem; color: var(--c); white-space: nowrap; }
 .tl-heavy { position: absolute; top: 3.3rem; transform: translate(-50%, -50%) rotate(45deg); width: 0.5rem; height: 0.5rem; background: var(--muted); }
 .tl-heavy span { display: none; }
-.tl-heavy-label { position: absolute; top: 6.25rem; transform: translateX(-50%); font-size: 0.62rem; color: var(--muted); white-space: nowrap; }
-.tl-gate { position: absolute; top: 5.05rem; transform: translateX(-50%); font-size: 0.62rem; color: var(--muted); white-space: nowrap; border-top: 1px solid var(--muted); padding-top: 0.1rem; }
-.tl-ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 1rem; font-size: 0.6rem; color: var(--muted); opacity: 0.7; }
+.tl-heavy-label { position: absolute; top: 6.9rem; transform: translateX(-50%); font-size: 0.8125rem; color: var(--muted); white-space: nowrap; }
+.tl-gate { position: absolute; top: 5.4rem; transform: translateX(-50%); font-size: 0.8125rem; color: var(--muted); white-space: nowrap; border-top: 1px solid var(--muted); padding-top: 0.1rem; }
+.tl-ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 1.2rem; font-size: 0.8125rem; color: var(--muted); }
 .tl-ticks span { position: absolute; transform: translateX(-50%); }
 .thread { position: relative; }
 .thread .msg, .thread .check { animation: rise 0.35s ease-out both; }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .msg { transition: border-color 0.15s; }
 .msg:hover { border-color: #3a424b; }
+.group-title { font-weight: 600; margin-bottom: 0.25rem; }
+.last-mb-0:last-child { margin-bottom: 0 !important; }
 </style>
