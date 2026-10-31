@@ -4,6 +4,8 @@
 export const ROLES = ['ATC', 'PILOT', 'GROUND']
 export const MAX_ROUNDS = 2 // brief: negotiate in under 3 turns
 const STANCES = ['PROPOSE', 'ACCEPT', 'COUNTER', 'REJECT', 'ESCALATE']
+// A slot less than this many minutes behind a heavy arrival is in its wake (about 5 NM on final).
+export const WAKE_SEPARATION_MIN = 2
 
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]))
 const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
@@ -18,7 +20,15 @@ const REAL_ROW_KEYS = {
 export function factsFor(role, s) {
   const base = { flight: s.flight, disruption: s.disruption, scheduled_arrival: s.scheduled_arrival_label }
   const real_row = pick(s.source, REAL_ROW_KEYS[role])
-  if (role === 'ATC') return { ...base, runway_slots_delay_min: s.runway_slots_delay_min, real_row }
+  if (role === 'ATC') {
+    return {
+      ...base,
+      runway_slots_delay_min: s.runway_slots_delay_min,
+      heavy_arrivals: s.heavy_arrivals,
+      wake_separation_min: WAKE_SEPARATION_MIN,
+      real_row,
+    }
+  }
   if (role === 'PILOT') {
     return {
       ...base,
@@ -38,7 +48,7 @@ export function factsFor(role, s) {
 }
 
 const DUTY = {
-  ATC: 'You are the air traffic controller. You own the runway slots: arrival delay can only be one of runway_slots_delay_min.',
+  ATC: 'You are the air traffic controller. You own the runway: arrival delay can only be one of runway_slots_delay_min, and a slot is unusable if it is less than wake_separation_min after a heavy arrival (heavy_arrivals, at_delay_min on the same delay scale), because of wake turbulence.',
   PILOT: 'You are the pilot in command. You own fuel and crew duty: delay must stay within (fuel_on_board_min - min_reserve_min), and the aircraft must be on the ground before crew_shift_end. Also protect the passenger connection (next_connection) where safely possible.',
   GROUND: 'You are the ground operations manager. You own gates: the aircraft can only use a gate that is free at its actual arrival time (scheduled arrival + delay). You must name the gate.',
 }
@@ -49,7 +59,8 @@ A flight is disrupted. Negotiate with the other two agents (ATC, PILOT, GROUND) 
 Your facts (you do not know the other agents' facts):
 ${JSON.stringify(facts)}
 Reply with JSON ONLY, no prose, no code fences:
-{"type":"PROPOSE|ACCEPT|COUNTER|REJECT|ESCALATE","delay_min":<number or null>,"gate":"<gate id or null>","message":"<max 25 words>"}
+{"message":"<your reasoning, max 25 words>","type":"PROPOSE|ACCEPT|COUNTER|REJECT|ESCALATE","delay_min":<number or null>,"gate":"<gate id or null>"}
+Write message first, then set delay_min and gate to the values you are proposing or accepting, never a value you are rejecting.
 Use ACCEPT only if you agree to the exact delay_min (and gate) on the table. Use ESCALATE if you believe no safe option exists.`
 }
 
@@ -110,6 +121,7 @@ export function checkProposal(s, p) {
   if (!Number.isFinite(delay)) return { ok: false, violations: ['SLOT'], warnings: [] }
   const arrival = s.scheduled_arrival_min + delay
   if (!s.runway_slots_delay_min.includes(delay)) violations.push('SLOT')
+  if (s.heavy_arrivals.some((h) => delay >= h.at_delay_min && delay - h.at_delay_min < WAKE_SEPARATION_MIN)) violations.push('WAKE')
   if (delay > s.fuel_on_board_min - s.min_reserve_min) violations.push('FUEL')
   if (!gate || gate.free_from_min > arrival) violations.push('GATE')
   if (arrival > s.crew_shift_end_min) violations.push('CREW')

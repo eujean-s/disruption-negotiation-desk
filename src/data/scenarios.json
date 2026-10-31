@@ -15,6 +15,12 @@
       35,
       50
     ],
+    "heavy_arrivals": [
+      {
+        "type": "B777 (heavy)",
+        "at_delay_min": 9
+      }
+    ],
     "fuel_on_board_min": 100,
     "min_reserve_min": 45,
     "next_connection": "Passenger connection departs 16:33",
@@ -62,15 +68,11 @@
       "origin_airport": "Tucson International Airport (Tucson, AZ)",
       "destination_airport": "Dallas/Fort Worth International Airport (Dallas-Fort Worth, TX)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "F1",
       "status": "FEASIBLE",
       "safe_options": [
-        {
-          "arrival_delay_min": 10,
-          "gate": "B10"
-        },
         {
           "arrival_delay_min": 20,
           "gate": "B10"
@@ -93,7 +95,7 @@
         }
       ],
       "earliest_safe": {
-        "arrival_delay_min": 10,
+        "arrival_delay_min": 20,
         "gate": "B10"
       },
       "blocking_constraints": [],
@@ -116,6 +118,7 @@
       65,
       80
     ],
+    "heavy_arrivals": [],
     "fuel_on_board_min": 110,
     "min_reserve_min": 45,
     "next_connection": "Passenger connection departs 09:57",
@@ -163,7 +166,7 @@
       "origin_airport": "Nashville International Airport (Nashville, TN)",
       "destination_airport": "LaGuardia Airport (Marine Air Terminal) (New York, NY)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "F2",
       "status": "FEASIBLE",
@@ -200,6 +203,12 @@
       25,
       40,
       55
+    ],
+    "heavy_arrivals": [
+      {
+        "type": "B767 (heavy)",
+        "at_delay_min": 24
+      }
     ],
     "fuel_on_board_min": 85,
     "min_reserve_min": 45,
@@ -248,22 +257,18 @@
       "origin_airport": "Chicago O'Hare International Airport (Chicago, IL)",
       "destination_airport": "Newark Liberty International Airport (Newark, NJ)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "F2",
       "status": "FEASIBLE",
       "safe_options": [
-        {
-          "arrival_delay_min": 25,
-          "gate": "D24"
-        },
         {
           "arrival_delay_min": 40,
           "gate": "D24"
         }
       ],
       "earliest_safe": {
-        "arrival_delay_min": 25,
+        "arrival_delay_min": 40,
         "gate": "D24"
       },
       "blocking_constraints": [],
@@ -286,6 +291,7 @@
       55,
       70
     ],
+    "heavy_arrivals": [],
     "fuel_on_board_min": 85,
     "min_reserve_min": 45,
     "next_connection": "Passenger connection departs 14:30",
@@ -333,7 +339,7 @@
       "origin_airport": "San Diego International Airport\u00a0(Lindbergh Field) (San Diego, CA)",
       "destination_airport": "Denver International Airport (Denver, CO)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "F3",
       "status": "FEASIBLE",
@@ -366,6 +372,12 @@
       45,
       60,
       75
+    ],
+    "heavy_arrivals": [
+      {
+        "type": "A330 (heavy)",
+        "at_delay_min": 44
+      }
     ],
     "fuel_on_board_min": 105,
     "min_reserve_min": 45,
@@ -414,22 +426,18 @@
       "origin_airport": "Gerald R. Ford International Airport (Grand Rapids, MI)",
       "destination_airport": "Minneapolis-Saint Paul International Airport (Minneapolis, MN)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "F2",
       "status": "FEASIBLE",
       "safe_options": [
-        {
-          "arrival_delay_min": 45,
-          "gate": "B10"
-        },
         {
           "arrival_delay_min": 60,
           "gate": "B10"
         }
       ],
       "earliest_safe": {
-        "arrival_delay_min": 45,
+        "arrival_delay_min": 60,
         "gate": "B10"
       },
       "blocking_constraints": [],
@@ -452,6 +460,7 @@
       125,
       140
     ],
+    "heavy_arrivals": [],
     "fuel_on_board_min": 85,
     "min_reserve_min": 45,
     "next_connection": "Passenger connection departs 19:39",
@@ -499,7 +508,7 @@
       "origin_airport": "San Antonio International Airport (San Antonio, TX)",
       "destination_airport": "Phoenix Sky Harbor International Airport (Phoenix, AZ)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "I1",
       "status": "INFEASIBLE",
@@ -528,6 +537,7 @@
       70,
       85
     ],
+    "heavy_arrivals": [],
     "fuel_on_board_min": 100,
     "min_reserve_min": 45,
     "next_connection": "Passenger connection departs 12:09",
@@ -575,7 +585,7 @@
       "origin_airport": "Phoenix Sky Harbor International Airport (Phoenix, AZ)",
       "destination_airport": "McCarran International Airport (Las Vegas, NV)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "I2",
       "status": "INFEASIBLE",
@@ -604,6 +614,7 @@
       75,
       90
     ],
+    "heavy_arrivals": [],
     "fuel_on_board_min": 140,
     "min_reserve_min": 45,
     "next_connection": "Passenger connection departs 18:45",
@@ -651,7 +662,7 @@
       "origin_airport": "Minneapolis-Saint Paul International Airport (Minneapolis, MN)",
       "destination_airport": "Seattle-Tacoma International Airport (Seattle, WA)"
     },
-    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, heavy_arrivals (wake separation), fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
     "ground_truth": {
       "archetype": "I3",
       "status": "INFEASIBLE",
