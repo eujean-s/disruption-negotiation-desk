@@ -21,7 +21,7 @@ node scripts/evaluate.js  # in another terminal: runs every scenario N times (de
 node scripts/impact.js path/to/flights.csv 500  # impact measures, plain code, no API calls
 ```
 
-`/api/agent` is public, so it only accepts requests shaped like the app's own: a string system prompt (max 4,000 chars) and 1-4 text messages (max 6,000 chars each). Anything else gets a 400. The model and `max_tokens` are fixed on the server. There is no rate limit, which would need storage.
+`/api/agent` is public, so it never accepts prompt text. The browser sends only `{ role, scenario, log }`: a role, a scenario reference (a curated id, or one raw `flights.csv` row) and the negotiation so far. The server rebuilds the scenario itself, cleans the history (known fields, bounded lengths) and recomputes every checker line before building the prompt (`src/prompts.js`), so the endpoint cannot be used as a general Claude proxy and checker verdicts cannot be forged. The model and `max_tokens` (300) are fixed on the server; API errors return a generic message. There is no rate limit (that would need storage), so set a spending limit on the API key.
 
 Pick a scenario (or **Custom** to paste any `flights.csv` row), press **Run**, watch the messages, then **Approve** (or decide by hand on ESCALATE). **Download log (JSON)** saves the traceable consensus log: every message, checker verdict, outcome and the human approval with timestamp.
 

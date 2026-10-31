@@ -1,42 +1,14 @@
 // Three-agent negotiation (ATC / PILOT / GROUND). The LLM only talks;
 // checkProposal() and fallback() are plain code and have the final word.
 
-import { checkProposal, fallback, FACTS, usableHoldMin, connectionStatus, slotMap } from './checker.js'
+import { checkProposal, fallback, connectionStatus, slotMap } from './checker.js'
+import { FLIGHTS_HEADER } from './scenarioFromRow.js'
+import { ROLES, MAX_ROUNDS, STANCES } from './prompts.js'
 
-export const ROLES = ['ATC', 'PILOT', 'GROUND']
-export const MAX_ROUNDS = 3 // brief: one turn = one message from each agent, consensus within 3 turns
-const STANCES = ['PROPOSE', 'ACCEPT', 'COUNTER', 'REJECT', 'ESCALATE']
+export { ROLES, MAX_ROUNDS }
 
-const factsFor = (role, s) => FACTS[role](s)
-
-const DUTY = {
-  ATC: 'You are the air traffic controller. You own the runway. Only propose slots listed in your facts with usable=true, i.e. gap_to_leader_min is null or >= required_gap_min (wake turbulence behind a heavy arrival). Propose the earliest such slot first. If another agent needs a different delay, counter with the earliest usable slot that satisfies them.',
-  PILOT: 'You are the pilot in command. You own fuel and crew duty. ACCEPT only if the delay on the table is <= usable_holding_min and <= latest_delay_for_crew_min. Otherwise COUNTER with the largest delay you can accept (the smaller of those two limits). Also protect the passenger connection where safely possible.',
-  GROUND: 'You are the ground operations manager. You own gates. ACCEPT a gate only if its free_from is no later than arrival time minus gate_change_notice_min, i.e. delay_min >= the gate\'s ready_at_delay_min. Otherwise COUNTER with the smallest delay at which a gate is ready, and name that gate. You must name the gate.',
-}
-
-function systemPrompt(role, facts) {
-  return `${DUTY[role]}
-A flight is disrupted. Negotiate with the other two agents (ATC, PILOT, GROUND) for an arrival delay in minutes and a gate. Times are HH:MM; delays are minutes. Be safe first, then minimise delay.
-Your facts (you do not know the other agents' facts):
-${JSON.stringify(facts)}
-Reply with JSON ONLY, no prose, no code fences:
-{"message":"<your reasoning, max 25 words>","type":"PROPOSE|ACCEPT|COUNTER|REJECT|ESCALATE","delay_min":<number or null>,"gate":"<gate id or null>"}
-Write message first, then set delay_min and gate to the values you are proposing or accepting, never a value you are rejecting.
-Use ACCEPT only if you agree to the exact delay_min (and gate) on the table. Use ESCALATE if you believe no safe option exists.`
-}
-
-function transcriptText(log) {
-  if (!log.length) return 'No messages yet. ATC opens with a PROPOSE.'
-  return log
-    .map((m) =>
-      m.kind === 'check'
-        ? `R${m.round} CHECKER: ${m.ok ? 'PASSED' : 'BLOCKED (' + m.violations.join(', ') + ')'}` +
-          (m.warnings.length ? ` WARNING: passenger connection missed (at gate ${m.connection.at_gate}, departs ${m.connection.departs})` : '')
-        : `R${m.round} ${m.role} [${m.type}] delay_min=${m.delay_min} gate=${m.gate}: ${m.message}`,
-    )
-    .join('\n')
-}
+// What the server needs to rebuild the scenario itself: a curated id, or the raw flights.csv row.
+const scenarioRef = (s) => (s.custom ? { row: FLIGHTS_HEADER.map((k) => s.source[k]).join(',') } : { id: s.id })
 
 // Safe JSON parse: tolerate fences/prose around the object, validate the shape.
 export function parseReply(text) {
@@ -59,13 +31,14 @@ export function parseReply(text) {
 }
 
 async function callAgent(baseUrl, role, s, log) {
-  const system = systemPrompt(role, factsFor(role, s))
-  const content = `Negotiation so far:\n${transcriptText(log)}\n\nYour turn (${role}). JSON only.`
+  // Prompts are built on the server from this reference; the browser never sends prompt text.
+  const history = log.map(({ kind, round, role, type, delay_min, gate, message, proposal }) =>
+    kind === 'check' ? { kind, round, proposal } : { kind, round, role, type, delay_min, gate, message })
   try {
     const res = await fetch(baseUrl + '/api/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: [{ role: 'user', content }] }),
+      body: JSON.stringify({ role, scenario: scenarioRef(s), log: history }),
     })
     const data = await res.json()
     if (!res.ok || !data.text) throw new Error(data.error || 'HTTP ' + res.status)
