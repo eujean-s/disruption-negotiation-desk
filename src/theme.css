@@ -40,6 +40,8 @@
 }
 
 body {
+  background: radial-gradient(1200px 500px at 85% -10%, rgba(233, 237, 241, 0.035), transparent 60%), var(--bg);
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'ss01';
 }

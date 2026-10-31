@@ -69,6 +69,20 @@ const rounds = computed(() => {
 })
 // Plain-code view of every offered slot: is any gate usable, and if not, what blocks it.
 const slots = computed(() => (scenario.value ? slotMap(scenario.value) : []))
+// Constraint timeline: everything on one axis of "minutes of delay", positioned in plain code.
+const timeline = computed(() => {
+  const s = scenario.value
+  if (!s) return null
+  const fuel = usableHoldMin(s)
+  const gates = s.gates.map((g) => ({ id: g.id, at: g.free_from_min + GATE_CHANGE_NOTICE_MIN - s.scheduled_arrival_min }))
+  const heavy = s.heavy_arrivals.map((h) => h.at_delay_min)
+  const max = Math.ceil((Math.max(...s.runway_slots_delay_min, fuel, ...gates.map((g) => g.at)) + 10) / 20) * 20
+  const pos = (v) => `${(Math.max(0, Math.min(v, max)) / max) * 100}%`
+  const ticks = Array.from({ length: 5 }, (_, i) => Math.round((max / 4) * i))
+  return { max, pos, fuel, gates, heavy, ticks }
+})
+const route = computed(() => scenario.value && { from: scenario.value.source.ORIGIN_AIRPORT, to: scenario.value.source.DESTINATION_AIRPORT })
+
 const agentFacts = (role) => JSON.stringify(FACTS[role](scenario.value), null, 1)
 
 const status = computed(() => {
@@ -204,10 +218,22 @@ async function run() {
         </div>
 
         <template v-if="scenario">
-          <p class="mt-3 mb-2 small">
-            <strong>{{ scenario.flight }}</strong><span v-if="scenario.date" class="text-muted">, {{ scenario.date }}</span>.
-            {{ scenario.disruption }}
-          </p>
+          <div class="hero mt-3 mb-3">
+            <div class="route mono">
+              <span class="ap">{{ route.from }}</span>
+              <span class="path"><span class="plane">✈</span></span>
+              <span class="ap">{{ route.to }}</span>
+            </div>
+            <div class="hero-meta">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <span class="mono fw-medium">{{ scenario.source.AIRLINE }} {{ scenario.source.FLIGHT_NUMBER }}</span>
+                <span v-if="scenario.date" class="text-muted mono small">{{ scenario.date }}</span>
+                <span class="trigger mono">{{ scenario.trigger }}</span>
+                <span class="text-muted small">BTS actual <span class="mono">+{{ scenario.source.ARRIVAL_DELAY }} min</span></span>
+              </div>
+              <div class="small text-muted">{{ scenario.disruption }}</div>
+            </div>
+          </div>
           <div class="row g-2">
             <div v-for="f in keyFacts" :key="f.label" class="col-6 col-lg-3">
               <div class="fact">
@@ -218,16 +244,27 @@ async function run() {
           </div>
 
           <div class="mt-3">
-            <div class="eyebrow mb-2">Slot map <span class="text-muted fw-normal text-none">· computed by the checker, not the agents</span></div>
-            <div class="slotmap">
-              <div v-for="sl in slots" :key="sl.delay_min" class="slot"
-                   :class="[sl.ok ? 'slot-ok' : 'slot-bad', outcome?.proposal?.delay_min === sl.delay_min ? 'slot-chosen' : '']">
-                <div class="mono slot-delay">+{{ sl.delay_min }}</div>
-                <div class="small mono">{{ hhmm(scenario.scheduled_arrival_min + sl.delay_min) }}</div>
-                <div class="slot-verdict mono">
-                  <template v-if="sl.ok">✓ {{ sl.gate }}</template>
-                  <template v-else>✕ {{ sl.violations.join(' ') }}</template>
-                </div>
+            <div class="eyebrow mb-2">Constraint timeline <span class="text-muted fw-normal text-none">· minutes of delay, computed by the checker, not the agents</span></div>
+            <div class="tl">
+              <div class="tl-fuel" :style="{ left: timeline.pos(timeline.fuel) }">
+                <span class="tl-fuel-label mono">fuel limit +{{ timeline.fuel }}</span>
+              </div>
+              <div class="tl-axis"></div>
+              <div v-for="h in timeline.heavy" :key="'h' + h" class="tl-heavy" :style="{ left: timeline.pos(h) }" :title="`Heavy arrival at +${h}`"></div>
+              <div v-for="h in timeline.heavy" :key="'hl' + h" class="tl-heavy-label mono" :style="{ left: timeline.pos(h) }">◆ heavy +{{ h }}</div>
+              <div v-for="sl in slots" :key="sl.delay_min" class="tl-slot"
+                   :class="[sl.ok ? 'is-ok' : 'is-bad', outcome?.proposal?.delay_min === sl.delay_min ? 'is-chosen' : '']"
+                   :style="{ left: timeline.pos(sl.delay_min) }"
+                   :title="sl.ok ? `+${sl.delay_min}: safe with ${sl.gate}` : `+${sl.delay_min}: ${sl.violations.map((v) => ruleText[v]).join('; ')}`">
+                <span class="tl-slot-label mono">+{{ sl.delay_min }}</span>
+                <span class="tl-dot"></span>
+                <span class="tl-slot-verdict mono">{{ sl.ok ? sl.gate : sl.violations.join(' ') }}</span>
+              </div>
+              <div v-for="g in timeline.gates" :key="g.id" class="tl-gate" :style="{ left: timeline.pos(g.at) }" :title="`${g.id} usable from +${g.at} (free + ${GATE_CHANGE_NOTICE_MIN} min notice)`">
+                <span class="mono">{{ g.id }} ready</span>
+              </div>
+              <div class="tl-ticks mono">
+                <span v-for="tk in timeline.ticks" :key="tk" :style="{ left: timeline.pos(tk) }">+{{ tk }}</span>
               </div>
             </div>
             <div class="small text-muted mt-1">
@@ -248,7 +285,7 @@ async function run() {
           Press <strong>Run negotiation</strong>. Each agent sees only its own facts; every agreement is checked by plain-code rules.
         </div>
 
-        <div v-for="r in rounds" :key="r.round" class="mb-3">
+        <div v-for="r in rounds" :key="r.round" class="mb-3 thread">
           <div class="round-label mono">ROUND {{ r.round }}/{{ MAX_ROUNDS }}</div>
           <template v-for="(e, i) in r.items" :key="i">
             <div v-if="e.kind === 'message'" class="msg" :class="roleMeta[e.role].cls">
@@ -436,4 +473,43 @@ summary { cursor: pointer; list-style-position: inside; }
 .decision { border: 1px solid var(--border); border-left: 2px solid var(--ok); border-radius: 0.4rem; padding: 0.4rem 0.6rem; }
 .decision-bad { border-left-color: var(--bad); }
 .reject-btn { color: var(--bad); }
+
+.app-header { position: relative; overflow: hidden; }
+.app-header::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 28px 28px; opacity: 0.35; mask-image: linear-gradient(90deg, transparent, #000 60%); }
+.app-header .container { position: relative; }
+.hero { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: 0.6rem;
+  background: radial-gradient(120% 140% at 0% 0%, var(--surface-2), var(--bg) 70%); }
+.route { display: flex; align-items: center; gap: 0.6rem; }
+.ap { font-size: 1.6rem; font-weight: 500; letter-spacing: 0.02em; }
+.path { position: relative; width: 4.5rem; height: 1px; background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 8px); }
+.plane { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -55%); background: var(--bg); padding: 0 0.25rem; color: var(--fg); font-size: 0.9rem; }
+.hero-meta { flex: 1; min-width: 16rem; }
+.trigger { font-size: 0.68rem; color: var(--warn); border: 1px solid rgba(210, 153, 34, 0.45); border-radius: 0.3rem; padding: 0 0.35rem; }
+.fw-medium { font-weight: 500; }
+.tl { position: relative; height: 8.6rem; margin: 0 1.5rem 0.25rem; }
+.tl-axis { position: absolute; left: 0; right: 0; top: 3.3rem; height: 1px; background: var(--border); }
+.tl-fuel { position: absolute; top: 0.2rem; bottom: 1.2rem; right: 0; border-left: 1px dashed var(--bad);
+  background: repeating-linear-gradient(135deg, rgba(248, 81, 73, 0.07) 0 6px, transparent 6px 12px); }
+.tl-fuel-label { position: absolute; top: 0; left: 0.35rem; font-size: 0.65rem; color: var(--bad); white-space: nowrap; }
+.tl-slot { position: absolute; top: 1.35rem; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.2rem; cursor: default; }
+.tl-slot-label { font-size: 0.8rem; font-weight: 500; }
+.tl-dot { width: 0.85rem; height: 0.85rem; border-radius: 50%; border: 2px solid var(--c); background: var(--bg); }
+.is-ok { --c: var(--ok); }
+.is-bad { --c: var(--bad); }
+.is-ok .tl-dot { background: var(--ok); }
+.is-chosen .tl-dot { box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--fg); }
+.tl-slot-verdict { font-size: 0.65rem; color: var(--c); white-space: nowrap; }
+.tl-heavy { position: absolute; top: 3.3rem; transform: translate(-50%, -50%) rotate(45deg); width: 0.5rem; height: 0.5rem; background: var(--muted); }
+.tl-heavy span { display: none; }
+.tl-heavy-label { position: absolute; top: 6.25rem; transform: translateX(-50%); font-size: 0.62rem; color: var(--muted); white-space: nowrap; }
+.tl-gate { position: absolute; top: 5.05rem; transform: translateX(-50%); font-size: 0.62rem; color: var(--muted); white-space: nowrap; border-top: 1px solid var(--muted); padding-top: 0.1rem; }
+.tl-ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 1rem; font-size: 0.6rem; color: var(--muted); opacity: 0.7; }
+.tl-ticks span { position: absolute; transform: translateX(-50%); }
+.thread { position: relative; }
+.thread .msg, .thread .check { animation: rise 0.35s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.msg { transition: border-color 0.15s; }
+.msg:hover { border-color: #3a424b; }
 </style>
