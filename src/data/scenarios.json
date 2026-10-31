@@ -1,0 +1,667 @@
+[
+  {
+    "id": "S1",
+    "flight": "AA 2229 (TUS to DFW)",
+    "date": "2015-11-02",
+    "trigger": "WEATHER_DELAY",
+    "disruption": "BTS records 22 min of weather delay on this flight (arrival 83 min late). Arrival rate at DFW is reduced, so only limited runway slots are open.",
+    "weather_delay_min": 22,
+    "late_aircraft_delay_min": 61,
+    "scheduled_arrival_label": "15:48",
+    "scheduled_arrival_min": 948,
+    "runway_slots_delay_min": [
+      10,
+      20,
+      35,
+      50
+    ],
+    "fuel_on_board_min": 100,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 16:33",
+    "gates": [
+      {
+        "id": "B10",
+        "free_from_min": 953
+      },
+      {
+        "id": "C13",
+        "free_from_min": 983
+      }
+    ],
+    "crew_shift_end_min": 1188,
+    "csv_row": 301084,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 11,
+      "DAY": 2,
+      "AIRLINE": "AA",
+      "FLIGHT_NUMBER": 2229,
+      "TAIL_NUMBER": "N4XRAA",
+      "ORIGIN_AIRPORT": "TUS",
+      "DESTINATION_AIRPORT": "DFW",
+      "SCHEDULED_DEPARTURE": 1229,
+      "DEPARTURE_TIME": 1407,
+      "DEPARTURE_DELAY": 98,
+      "TAXI_OUT": 10,
+      "SCHEDULED_TIME": 139,
+      "ELAPSED_TIME": 124,
+      "AIR_TIME": 105,
+      "DISTANCE": 813,
+      "TAXI_IN": 9,
+      "SCHEDULED_ARRIVAL": 1548,
+      "ARRIVAL_TIME": 1711,
+      "ARRIVAL_DELAY": 83,
+      "AIR_SYSTEM_DELAY": 0,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 61,
+      "WEATHER_DELAY": 22
+    },
+    "lookup": {
+      "airline_name": "American Airlines Inc.",
+      "origin_airport": "Tucson International Airport (Tucson, AZ)",
+      "destination_airport": "Dallas/Fort Worth International Airport (Dallas-Fort Worth, TX)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "F1",
+      "status": "FEASIBLE",
+      "safe_options": [
+        {
+          "arrival_delay_min": 10,
+          "gate": "B10"
+        },
+        {
+          "arrival_delay_min": 20,
+          "gate": "B10"
+        },
+        {
+          "arrival_delay_min": 35,
+          "gate": "B10"
+        },
+        {
+          "arrival_delay_min": 35,
+          "gate": "C13"
+        },
+        {
+          "arrival_delay_min": 50,
+          "gate": "B10"
+        },
+        {
+          "arrival_delay_min": 50,
+          "gate": "C13"
+        }
+      ],
+      "earliest_safe": {
+        "arrival_delay_min": 10,
+        "gate": "B10"
+      },
+      "blocking_constraints": [],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S2",
+    "flight": "MQ 3167 (BNA to LGA)",
+    "date": "2015-02-18",
+    "trigger": "WEATHER_DELAY",
+    "disruption": "BTS records 49 min of weather delay on this flight (arrival 134 min late). Arrival rate at LGA is reduced, so only limited runway slots are open.",
+    "weather_delay_min": 49,
+    "late_aircraft_delay_min": 0,
+    "scheduled_arrival_label": "09:12",
+    "scheduled_arrival_min": 552,
+    "runway_slots_delay_min": [
+      40,
+      50,
+      65,
+      80
+    ],
+    "fuel_on_board_min": 110,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 09:57",
+    "gates": [
+      {
+        "id": "C17",
+        "free_from_min": 602
+      },
+      {
+        "id": "D24",
+        "free_from_min": 632
+      }
+    ],
+    "crew_shift_end_min": 792,
+    "csv_row": 53082,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 2,
+      "DAY": 18,
+      "AIRLINE": "MQ",
+      "FLIGHT_NUMBER": 3167,
+      "TAIL_NUMBER": "N820MQ",
+      "ORIGIN_AIRPORT": "BNA",
+      "DESTINATION_AIRPORT": "LGA",
+      "SCHEDULED_DEPARTURE": 555,
+      "DEPARTURE_TIME": 644,
+      "DEPARTURE_DELAY": 49,
+      "TAXI_OUT": 114,
+      "SCHEDULED_TIME": 137,
+      "ELAPSED_TIME": 222,
+      "AIR_TIME": 96,
+      "DISTANCE": 764,
+      "TAXI_IN": 12,
+      "SCHEDULED_ARRIVAL": 912,
+      "ARRIVAL_TIME": 1126,
+      "ARRIVAL_DELAY": 134,
+      "AIR_SYSTEM_DELAY": 85,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 0,
+      "WEATHER_DELAY": 49
+    },
+    "lookup": {
+      "airline_name": "American Eagle Airlines Inc.",
+      "origin_airport": "Nashville International Airport (Nashville, TN)",
+      "destination_airport": "LaGuardia Airport (Marine Air Terminal) (New York, NY)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "F2",
+      "status": "FEASIBLE",
+      "safe_options": [
+        {
+          "arrival_delay_min": 50,
+          "gate": "C17"
+        },
+        {
+          "arrival_delay_min": 65,
+          "gate": "C17"
+        }
+      ],
+      "earliest_safe": {
+        "arrival_delay_min": 50,
+        "gate": "C17"
+      },
+      "blocking_constraints": [],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S3",
+    "flight": "UA 646 (ORD to EWR)",
+    "date": "2015-01-06",
+    "trigger": "WEATHER_DELAY",
+    "disruption": "BTS records 26 min of weather delay on this flight (arrival 26 min late). Arrival rate at EWR is reduced, so only limited runway slots are open.",
+    "weather_delay_min": 26,
+    "late_aircraft_delay_min": 0,
+    "scheduled_arrival_label": "16:59",
+    "scheduled_arrival_min": 1019,
+    "runway_slots_delay_min": [
+      15,
+      25,
+      40,
+      55
+    ],
+    "fuel_on_board_min": 85,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 17:44",
+    "gates": [
+      {
+        "id": "D24",
+        "free_from_min": 1044
+      },
+      {
+        "id": "A5",
+        "free_from_min": 1074
+      }
+    ],
+    "crew_shift_end_min": 1259,
+    "csv_row": 12623,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 1,
+      "DAY": 6,
+      "AIRLINE": "UA",
+      "FLIGHT_NUMBER": 646,
+      "TAIL_NUMBER": "N845UA",
+      "ORIGIN_AIRPORT": "ORD",
+      "DESTINATION_AIRPORT": "EWR",
+      "SCHEDULED_DEPARTURE": 1354,
+      "DEPARTURE_TIME": 1420,
+      "DEPARTURE_DELAY": 26,
+      "TAXI_OUT": 22,
+      "SCHEDULED_TIME": 125,
+      "ELAPSED_TIME": 125,
+      "AIR_TIME": 92,
+      "DISTANCE": 719,
+      "TAXI_IN": 11,
+      "SCHEDULED_ARRIVAL": 1659,
+      "ARRIVAL_TIME": 1725,
+      "ARRIVAL_DELAY": 26,
+      "AIR_SYSTEM_DELAY": 0,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 0,
+      "WEATHER_DELAY": 26
+    },
+    "lookup": {
+      "airline_name": "United Air Lines Inc.",
+      "origin_airport": "Chicago O'Hare International Airport (Chicago, IL)",
+      "destination_airport": "Newark Liberty International Airport (Newark, NJ)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "F2",
+      "status": "FEASIBLE",
+      "safe_options": [
+        {
+          "arrival_delay_min": 25,
+          "gate": "D24"
+        },
+        {
+          "arrival_delay_min": 40,
+          "gate": "D24"
+        }
+      ],
+      "earliest_safe": {
+        "arrival_delay_min": 25,
+        "gate": "D24"
+      },
+      "blocking_constraints": [],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S4",
+    "flight": "WN 1998 (SAN to DEN)",
+    "date": "2015-07-18",
+    "trigger": "WEATHER_DELAY",
+    "disruption": "BTS records 41 min of weather delay on this flight (arrival 67 min late). Arrival rate at DEN is reduced, so only limited runway slots are open.",
+    "weather_delay_min": 41,
+    "late_aircraft_delay_min": 0,
+    "scheduled_arrival_label": "13:45",
+    "scheduled_arrival_min": 825,
+    "runway_slots_delay_min": [
+      30,
+      40,
+      55,
+      70
+    ],
+    "fuel_on_board_min": 85,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 14:30",
+    "gates": [
+      {
+        "id": "A3",
+        "free_from_min": 865
+      },
+      {
+        "id": "B16",
+        "free_from_min": 910
+      }
+    ],
+    "crew_shift_end_min": 1065,
+    "csv_row": 231158,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 7,
+      "DAY": 18,
+      "AIRLINE": "WN",
+      "FLIGHT_NUMBER": 1998,
+      "TAIL_NUMBER": "N778SW",
+      "ORIGIN_AIRPORT": "SAN",
+      "DESTINATION_AIRPORT": "DEN",
+      "SCHEDULED_DEPARTURE": 1025,
+      "DEPARTURE_TIME": 1106,
+      "DEPARTURE_DELAY": 41,
+      "TAXI_OUT": 47,
+      "SCHEDULED_TIME": 140,
+      "ELAPSED_TIME": 166,
+      "AIR_TIME": 112,
+      "DISTANCE": 853,
+      "TAXI_IN": 7,
+      "SCHEDULED_ARRIVAL": 1345,
+      "ARRIVAL_TIME": 1452,
+      "ARRIVAL_DELAY": 67,
+      "AIR_SYSTEM_DELAY": 26,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 0,
+      "WEATHER_DELAY": 41
+    },
+    "lookup": {
+      "airline_name": "Southwest Airlines Co.",
+      "origin_airport": "San Diego International Airport\u00a0(Lindbergh Field) (San Diego, CA)",
+      "destination_airport": "Denver International Airport (Denver, CO)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "F3",
+      "status": "FEASIBLE",
+      "safe_options": [
+        {
+          "arrival_delay_min": 40,
+          "gate": "A3"
+        }
+      ],
+      "earliest_safe": {
+        "arrival_delay_min": 40,
+        "gate": "A3"
+      },
+      "blocking_constraints": [],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S5",
+    "flight": "DL 795 (GRR to MSP)",
+    "date": "2015-04-16",
+    "trigger": "LATE_AIRCRAFT_DELAY",
+    "disruption": "BTS records 47 min of late-aircraft delay on this flight (arrival 127 min late). The arrival bank at MSP is congested, so only limited runway slots are open.",
+    "weather_delay_min": 0,
+    "late_aircraft_delay_min": 47,
+    "scheduled_arrival_label": "16:38",
+    "scheduled_arrival_min": 998,
+    "runway_slots_delay_min": [
+      35,
+      45,
+      60,
+      75
+    ],
+    "fuel_on_board_min": 105,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 17:23",
+    "gates": [
+      {
+        "id": "B10",
+        "free_from_min": 1043
+      },
+      {
+        "id": "C27",
+        "free_from_min": 1073
+      }
+    ],
+    "crew_shift_end_min": 1238,
+    "csv_row": 115901,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 4,
+      "DAY": 16,
+      "AIRLINE": "DL",
+      "FLIGHT_NUMBER": 795,
+      "TAIL_NUMBER": "N343NW",
+      "ORIGIN_AIRPORT": "GRR",
+      "DESTINATION_AIRPORT": "MSP",
+      "SCHEDULED_DEPARTURE": 1610,
+      "DEPARTURE_TIME": 1831,
+      "DEPARTURE_DELAY": 141,
+      "TAXI_OUT": 8,
+      "SCHEDULED_TIME": 88,
+      "ELAPSED_TIME": 74,
+      "AIR_TIME": 64,
+      "DISTANCE": 408,
+      "TAXI_IN": 2,
+      "SCHEDULED_ARRIVAL": 1638,
+      "ARRIVAL_TIME": 1845,
+      "ARRIVAL_DELAY": 127,
+      "AIR_SYSTEM_DELAY": 0,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 80,
+      "LATE_AIRCRAFT_DELAY": 47,
+      "WEATHER_DELAY": 0
+    },
+    "lookup": {
+      "airline_name": "Delta Air Lines Inc.",
+      "origin_airport": "Gerald R. Ford International Airport (Grand Rapids, MI)",
+      "destination_airport": "Minneapolis-Saint Paul International Airport (Minneapolis, MN)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "F2",
+      "status": "FEASIBLE",
+      "safe_options": [
+        {
+          "arrival_delay_min": 45,
+          "gate": "B10"
+        },
+        {
+          "arrival_delay_min": 60,
+          "gate": "B10"
+        }
+      ],
+      "earliest_safe": {
+        "arrival_delay_min": 45,
+        "gate": "B10"
+      },
+      "blocking_constraints": [],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S6",
+    "flight": "OO 2752 (SAT to PHX)",
+    "date": "2015-04-14",
+    "trigger": "WEATHER_DELAY",
+    "disruption": "BTS records 108 min of weather delay on this flight (arrival 112 min late). Arrival rate at PHX is reduced, so only limited runway slots are open.",
+    "weather_delay_min": 108,
+    "late_aircraft_delay_min": 4,
+    "scheduled_arrival_label": "18:54",
+    "scheduled_arrival_min": 1134,
+    "runway_slots_delay_min": [
+      100,
+      110,
+      125,
+      140
+    ],
+    "fuel_on_board_min": 85,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 19:39",
+    "gates": [
+      {
+        "id": "C17",
+        "free_from_min": 1234
+      },
+      {
+        "id": "D8",
+        "free_from_min": 1259
+      }
+    ],
+    "crew_shift_end_min": 1374,
+    "csv_row": 114697,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 4,
+      "DAY": 14,
+      "AIRLINE": "OO",
+      "FLIGHT_NUMBER": 2752,
+      "TAIL_NUMBER": "N896SK",
+      "ORIGIN_AIRPORT": "SAT",
+      "DESTINATION_AIRPORT": "PHX",
+      "SCHEDULED_DEPARTURE": 1825,
+      "DEPARTURE_TIME": 2022,
+      "DEPARTURE_DELAY": 117,
+      "TAXI_OUT": 21,
+      "SCHEDULED_TIME": 149,
+      "ELAPSED_TIME": 144,
+      "AIR_TIME": 117,
+      "DISTANCE": 843,
+      "TAXI_IN": 6,
+      "SCHEDULED_ARRIVAL": 1854,
+      "ARRIVAL_TIME": 2046,
+      "ARRIVAL_DELAY": 112,
+      "AIR_SYSTEM_DELAY": 0,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 4,
+      "WEATHER_DELAY": 108
+    },
+    "lookup": {
+      "airline_name": "Skywest Airlines Inc.",
+      "origin_airport": "San Antonio International Airport (San Antonio, TX)",
+      "destination_airport": "Phoenix Sky Harbor International Airport (Phoenix, AZ)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "I1",
+      "status": "INFEASIBLE",
+      "safe_options": [],
+      "earliest_safe": null,
+      "blocking_constraints": [
+        "FUEL",
+        "GATE"
+      ],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S7",
+    "flight": "US 561 (PHX to LAS)",
+    "date": "2015-02-01",
+    "trigger": "WEATHER_DELAY",
+    "disruption": "BTS records 57 min of weather delay on this flight (arrival 328 min late). Arrival rate at LAS is reduced, so only limited runway slots are open.",
+    "weather_delay_min": 57,
+    "late_aircraft_delay_min": 270,
+    "scheduled_arrival_label": "11:24",
+    "scheduled_arrival_min": 684,
+    "runway_slots_delay_min": [
+      45,
+      55,
+      70,
+      85
+    ],
+    "fuel_on_board_min": 100,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 12:09",
+    "gates": [
+      {
+        "id": "D24",
+        "free_from_min": 749
+      },
+      {
+        "id": "A19",
+        "free_from_min": 764
+      }
+    ],
+    "crew_shift_end_min": 924,
+    "csv_row": 34785,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 2,
+      "DAY": 1,
+      "AIRLINE": "US",
+      "FLIGHT_NUMBER": 561,
+      "TAIL_NUMBER": "N185UW",
+      "ORIGIN_AIRPORT": "PHX",
+      "DESTINATION_AIRPORT": "LAS",
+      "SCHEDULED_DEPARTURE": 1110,
+      "DEPARTURE_TIME": 1637,
+      "DEPARTURE_DELAY": 327,
+      "TAXI_OUT": 12,
+      "SCHEDULED_TIME": 74,
+      "ELAPSED_TIME": 75,
+      "AIR_TIME": 48,
+      "DISTANCE": 255,
+      "TAXI_IN": 15,
+      "SCHEDULED_ARRIVAL": 1124,
+      "ARRIVAL_TIME": 1652,
+      "ARRIVAL_DELAY": 328,
+      "AIR_SYSTEM_DELAY": 1,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 270,
+      "WEATHER_DELAY": 57
+    },
+    "lookup": {
+      "airline_name": "US Airways Inc.",
+      "origin_airport": "Phoenix Sky Harbor International Airport (Phoenix, AZ)",
+      "destination_airport": "McCarran International Airport (Las Vegas, NV)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "I2",
+      "status": "INFEASIBLE",
+      "safe_options": [],
+      "earliest_safe": null,
+      "blocking_constraints": [
+        "FUEL",
+        "GATE"
+      ],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  },
+  {
+    "id": "S8",
+    "flight": "AS 37 (MSP to SEA)",
+    "date": "2015-04-22",
+    "trigger": "LATE_AIRCRAFT_DELAY",
+    "disruption": "BTS records 58 min of late-aircraft delay on this flight (arrival 70 min late). The arrival bank at SEA is congested, so only limited runway slots are open.",
+    "weather_delay_min": 0,
+    "late_aircraft_delay_min": 58,
+    "scheduled_arrival_label": "18:00",
+    "scheduled_arrival_min": 1080,
+    "runway_slots_delay_min": [
+      50,
+      60,
+      75,
+      90
+    ],
+    "fuel_on_board_min": 140,
+    "min_reserve_min": 45,
+    "next_connection": "Passenger connection departs 18:45",
+    "gates": [
+      {
+        "id": "A3",
+        "free_from_min": 1125
+      },
+      {
+        "id": "B30",
+        "free_from_min": 1155
+      }
+    ],
+    "crew_shift_end_min": 1129,
+    "csv_row": 121629,
+    "source": {
+      "YEAR": 2015,
+      "MONTH": 4,
+      "DAY": 22,
+      "AIRLINE": "AS",
+      "FLIGHT_NUMBER": 37,
+      "TAIL_NUMBER": "N618AS",
+      "ORIGIN_AIRPORT": "MSP",
+      "DESTINATION_AIRPORT": "SEA",
+      "SCHEDULED_DEPARTURE": 1625,
+      "DEPARTURE_TIME": 1723,
+      "DEPARTURE_DELAY": 58,
+      "TAXI_OUT": 24,
+      "SCHEDULED_TIME": 215,
+      "ELAPSED_TIME": 227,
+      "AIR_TIME": 197,
+      "DISTANCE": 1399,
+      "TAXI_IN": 6,
+      "SCHEDULED_ARRIVAL": 1800,
+      "ARRIVAL_TIME": 1910,
+      "ARRIVAL_DELAY": 70,
+      "AIR_SYSTEM_DELAY": 12,
+      "SECURITY_DELAY": 0,
+      "AIRLINE_DELAY": 0,
+      "LATE_AIRCRAFT_DELAY": 58,
+      "WEATHER_DELAY": 0
+    },
+    "lookup": {
+      "airline_name": "Alaska Airlines Inc.",
+      "origin_airport": "Minneapolis-Saint Paul International Airport (Minneapolis, MN)",
+      "destination_airport": "Seattle-Tacoma International Airport (Seattle, WA)"
+    },
+    "data_note": "REAL (BTS 2015 row): everything in `source`, plus flight, date, delays and scheduled arrival. SYNTHETIC assumptions: runway_slots_delay_min, fuel_on_board_min, min_reserve_min, gates, crew_shift_end_min, next_connection. Slots are generated around the real delay.",
+    "ground_truth": {
+      "archetype": "I3",
+      "status": "INFEASIBLE",
+      "safe_options": [],
+      "earliest_safe": null,
+      "blocking_constraints": [
+        "CREW",
+        "GATE"
+      ],
+      "note": "Computed by plain code (same rules as checkProposal). Use it to score the agents; never show it to them."
+    }
+  }
+]
