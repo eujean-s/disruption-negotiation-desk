@@ -128,6 +128,7 @@ async function run() {
         Passenger connection: at gate {{ outcome.connection.at_gate }}, connection departs {{ outcome.connection.departs }}
         → <strong>{{ outcome.connection.missed ? 'MISSED (soft constraint, human decides)' : 'protected' }}</strong>
       </p>
+      <p v-if="outcome.reason" class="mb-2"><strong>Why:</strong> {{ outcome.reason }}</p>
       <p v-if="!outcome.proposal" class="mb-2">No option passes the checker. A human must decide.</p>
       <button v-if="outcome.proposal" class="btn btn-success" :disabled="approved" @click="approve">
         {{ approved ? 'Approved by human ✓' : 'Approve' }}

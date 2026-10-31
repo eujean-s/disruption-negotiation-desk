@@ -85,12 +85,28 @@ function consensusProposal(msgs) {
   return gate ? { delay_min: delay, gate } : null
 }
 
+// Short summary of where the agents' last round diverged, for the fallback reason.
+function disagreement(msgs) {
+  const stuck = msgs.filter((m) => !['PROPOSE', 'ACCEPT', 'COUNTER'].includes(m.type))
+  if (stuck.length) return stuck.map((m) => `${m.role} ${m.type}`).join(', ')
+  return msgs.map((m) => `${m.role} delay ${m.delay_min ?? '-'}${m.role === 'GROUND' ? ' gate ' + (m.gate ?? '-') : ''}`).join(', ')
+}
+
+// Rules that block at least one option in every slot/gate combination (why nothing is feasible).
+function blockingRules(s) {
+  const seen = new Set()
+  for (const delay_min of s.runway_slots_delay_min)
+    for (const g of s.gates) checkProposal(s, { delay_min, gate: g.id }).violations.forEach((v) => seen.add(v))
+  return [...seen].join(', ')
+}
+
 // onEvent receives every message / checker verdict / outcome in order.
 export async function runNegotiation(scenario, { onEvent = () => {}, baseUrl = '' } = {}) {
   const log = []
   const emit = (e) => { log.push(e); onEvent(e) }
   let blocked = 0
   let lastRound = 0
+  let why = 'no rounds were run'
 
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     lastRound = round
@@ -101,9 +117,15 @@ export async function runNegotiation(scenario, { onEvent = () => {}, baseUrl = '
       msgs.push(m)
       emit(m)
     }
-    if (msgs.every((m) => m.type === 'ESCALATE')) break
+    if (msgs.every((m) => m.type === 'ESCALATE')) {
+      why = `all three agents escalated in round ${round}`
+      break
+    }
     const candidate = consensusProposal(msgs)
-    if (!candidate) continue
+    if (!candidate) {
+      why = `no agreement after ${round} of ${MAX_ROUNDS} rounds (${disagreement(msgs)})`
+      continue
+    }
     const verdict = checkProposal(scenario, candidate)
     emit({ kind: 'check', round, proposal: candidate, ...verdict })
     if (verdict.ok) {
@@ -112,12 +134,15 @@ export async function runNegotiation(scenario, { onEvent = () => {}, baseUrl = '
       return { ...out, log }
     }
     blocked++
+    why = `round ${round} consensus (delay ${candidate.delay_min}, gate ${candidate.gate}) blocked by checker: ${verdict.violations.join(', ')}`
   }
 
   const fb = fallback(scenario)
   const out = fb
-    ? { kind: 'outcome', outcome: 'FALLBACK', proposal: fb, round: lastRound, blocked, connection: connectionStatus(scenario, fb) }
-    : { kind: 'outcome', outcome: 'ESCALATE', proposal: null, round: lastRound, blocked }
+    ? { kind: 'outcome', outcome: 'FALLBACK', proposal: fb, round: lastRound, blocked, connection: connectionStatus(scenario, fb),
+        reason: `${why}. Fallback chose the earliest runway slot and gate that pass every checker rule.` }
+    : { kind: 'outcome', outcome: 'ESCALATE', proposal: null, round: lastRound, blocked,
+        reason: `${why}. No runway slot and gate combination passes the checker (${blockingRules(scenario)}), so a human must decide.` }
   emit(out)
   return { ...out, log }
 }
