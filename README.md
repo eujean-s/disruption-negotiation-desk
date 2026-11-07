@@ -106,7 +106,7 @@ node scripts/impact.js path/to/flights.csv 500     # impact measures, plain code
 - Correct escalations on S6-S8: **9/9** · mismatches: **0/24**
 - Passenger connection missed (soft warning): **12 of 15 plans**. In S2-S5 even the earliest safe slot misses it, so it is a human trade-off, not a negotiation failure.
 
-**Caveats.** N=3 is small and LLM output varies between runs. The checker enforces the same rules `ground_truth` was computed with, so 0 mismatches shows the safety net holds; it is **not** independent validation.
+**Caveats.** N=3 is small and LLM output varies between runs. Two runs of 24 gave the same totals, one before and one after prompts moved to the server; that is two samples, not proof of stability. The checker enforces the same rules `ground_truth` was computed with, so 0 mismatches shows the safety net holds; it is **not** independent validation.
 
 ### Where it fails
 
