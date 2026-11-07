@@ -1,0 +1,542 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T09:09:09+00:00",
+  "title": "Design System: Disruption Negotiation Desk",
+  "extensions": {
+    "colorMeta": {
+      "sign": {
+        "role": "primary",
+        "displayName": "Signage Yellow",
+        "canonical": "#ffd400",
+        "tonalRamp": [
+          "#100a00",
+          "#2e2400",
+          "#4f4103",
+          "#74600a",
+          "#9a8012",
+          "#c3a215",
+          "#dec87d",
+          "#f5efd8"
+        ]
+      },
+      "sign-hover": {
+        "role": "primary",
+        "displayName": "Sign Hover",
+        "canonical": "#ffe14d",
+        "tonalRamp": [
+          "#100b00",
+          "#2c2501",
+          "#4d4204",
+          "#71610c",
+          "#968214",
+          "#bea419",
+          "#d9ca86",
+          "#f3efdb"
+        ]
+      },
+      "sign-press": {
+        "role": "primary",
+        "displayName": "Sign Press",
+        "canonical": "#e6bf00",
+        "tonalRamp": [
+          "#100a00",
+          "#2e2400",
+          "#504100",
+          "#745f03",
+          "#9b8007",
+          "#c3a203",
+          "#ddc983",
+          "#f4efda"
+        ]
+      },
+      "ink": {
+        "role": "secondary",
+        "displayName": "Sign Black",
+        "canonical": "#111316",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242527",
+          "#404246",
+          "#5f6165",
+          "#808286",
+          "#a3a5a9",
+          "#c8c9cc",
+          "#eeeeef"
+        ]
+      },
+      "ink-press": {
+        "role": "secondary",
+        "displayName": "Pure Black",
+        "canonical": "#000000",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Terminal Ground",
+        "canonical": "#efefe9",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#252522",
+          "#42423e",
+          "#62625c",
+          "#83837d",
+          "#a5a5a0",
+          "#c9c9c6",
+          "#eeeeed"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#d9d9d2",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#252522",
+          "#42423d",
+          "#62625c",
+          "#83837c",
+          "#a5a59f",
+          "#c9c9c6",
+          "#eeeeed"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Quiet Grey",
+        "canonical": "#575b60",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#232528",
+          "#3f4247",
+          "#5e6267",
+          "#7e8388",
+          "#a1a5ab",
+          "#c7c9cc",
+          "#eeeeef"
+        ]
+      },
+      "steel": {
+        "role": "neutral",
+        "displayName": "Steel",
+        "canonical": "#8a8d90",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#232527",
+          "#404245",
+          "#5f6264",
+          "#808386",
+          "#a2a5a8",
+          "#c7c9cb",
+          "#eeeeef"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Verdict Green",
+        "canonical": "#0a6e37",
+        "tonalRamp": [
+          "#001004",
+          "#002e12",
+          "#025026",
+          "#16743d",
+          "#41975d",
+          "#6bb982",
+          "#aad6b4",
+          "#e5f3e8"
+        ]
+      },
+      "ok-tint": {
+        "role": "tertiary",
+        "displayName": "Pass Tint",
+        "canonical": "#e3f3e8",
+        "tonalRamp": [
+          "#090c0a",
+          "#1f2722",
+          "#39463d",
+          "#57655c",
+          "#78877d",
+          "#9ba9a0",
+          "#c3ccc6",
+          "#ecefed"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Warning Umber",
+        "canonical": "#855400",
+        "tonalRamp": [
+          "#140800",
+          "#361f00",
+          "#5d3900",
+          "#865502",
+          "#aa7633",
+          "#cc9a5e",
+          "#e2c3a1",
+          "#f6ede2"
+        ]
+      },
+      "bad": {
+        "role": "tertiary",
+        "displayName": "Verdict Red",
+        "canonical": "#bf1d10",
+        "tonalRamp": [
+          "#200000",
+          "#4d0000",
+          "#800500",
+          "#b70e03",
+          "#df4232",
+          "#ff7461",
+          "#fdb4a8",
+          "#fee9e5"
+        ]
+      },
+      "bad-tint": {
+        "role": "tertiary",
+        "displayName": "Block Tint",
+        "canonical": "#fbe7e4",
+        "tonalRamp": [
+          "#0e0a09",
+          "#2c2221",
+          "#4d3e3b",
+          "#6d5d5a",
+          "#8f7e7b",
+          "#b2a09e",
+          "#d1c6c5",
+          "#f1eded"
+        ]
+      },
+      "on-ink": {
+        "role": "neutral",
+        "displayName": "On Ink",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "on-ink-muted": {
+        "role": "neutral",
+        "displayName": "On Ink Muted",
+        "canonical": "#bcc0c5",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#232528",
+          "#3f4246",
+          "#5e6266",
+          "#7f8387",
+          "#a2a5aa",
+          "#c7c9cc",
+          "#eeeeef"
+        ]
+      },
+      "on-ink-ok": {
+        "role": "tertiary",
+        "displayName": "Signal Green",
+        "canonical": "#4ade80",
+        "tonalRamp": [
+          "#001003",
+          "#002e12",
+          "#035026",
+          "#0a753a",
+          "#129c50",
+          "#39c26d",
+          "#98dca9",
+          "#e0f5e5"
+        ]
+      },
+      "on-ink-bad": {
+        "role": "tertiary",
+        "displayName": "Signal Red",
+        "canonical": "#ff7063",
+        "tonalRamp": [
+          "#1e0001",
+          "#4d0002",
+          "#800409",
+          "#b02320",
+          "#d84c42",
+          "#fb776a",
+          "#fdb4aa",
+          "#fee9e6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The sign line only."
+      },
+      "decision": {
+        "displayName": "Decision",
+        "purpose": "The recorded human decision beside the sign."
+      },
+      "band": {
+        "displayName": "Band",
+        "purpose": "The rule-based-plan band across the sign."
+      },
+      "subline": {
+        "displayName": "Subline",
+        "purpose": "The sentence under the sign line."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "The Approve-size action."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Product name, panel headers and the sources heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Log messages and sign notes."
+      },
+      "body-sm": {
+        "displayName": "Body Small",
+        "purpose": "Rule rows, checker callouts and the sources list."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Strip labels, table headers and message metadata."
+      },
+      "tile-code": {
+        "displayName": "Tile Code",
+        "purpose": "The gate code on the tile."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Slots-table values."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Outcome tags, rule codes and agent stance lines."
+      }
+    },
+    "shadows": [
+      {
+        "name": "chosen-ring",
+        "value": "0 0 0 3px var(--ink), 0 0 0 5px var(--sign)",
+        "purpose": "Solid zero-offset ring on the chosen timeline slot. Not an elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "sign-field",
+        "value": "180ms ease-out",
+        "purpose": "Sign background and text colour change between decision states."
+      },
+      {
+        "name": "sign-text-in",
+        "value": "320ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Sign text wipes in from the top with a 0.75rem rise when the state or title changes."
+      },
+      {
+        "name": "wait-pulse",
+        "value": "1s ease-in-out infinite, staggered 160ms",
+        "purpose": "Three squares on the gate tile while negotiating; dips to 25% opacity."
+      },
+      {
+        "name": "skeleton-pulse",
+        "value": "1.2s ease-in-out infinite",
+        "purpose": "Replying skeleton in the log."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "All of the above are off under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-table",
+        "value": "1399px"
+      },
+      {
+        "name": "tablet",
+        "value": "1199px"
+      },
+      {
+        "name": "mobile",
+        "value": "767px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Run Button",
+      "kind": "button",
+      "refersTo": "button-run",
+      "description": "The one action that starts a negotiation, on the black top bar.",
+      "html": "<div class=\"ds-on-ink\"><button class=\"ds-btn-run\">Run negotiation</button></div>",
+      "css": ".ds-on-ink{background:var(--ink);padding:12px;} .ds-btn-run{display:inline-block;font-family:var(--sans);line-height:1.5;border:1px solid;border-radius:4px;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;background:var(--sign);color:var(--ink);border-color:var(--sign);font-weight:700;font-size:1rem;padding:.375rem 1.5rem;} .ds-btn-run:hover{background:#ffe14d;border-color:#ffe14d;} .ds-btn-run:active{background:#e6bf00;border-color:#e6bf00;} .ds-btn-run:focus-visible{outline:3px solid var(--sign);outline-offset:2px;}"
+    },
+    {
+      "name": "Approve Button",
+      "kind": "button",
+      "refersTo": "button-approve",
+      "description": "The human decision, at the largest control size, on the sign. Inverts to white on the red sign.",
+      "html": "<div class=\"ds-on-sign\"><button class=\"ds-btn-go\">Approve plan</button></div>",
+      "css": ".ds-on-sign{background:var(--sign);padding:16px;} .ds-btn-go{display:inline-block;font-family:var(--sans);line-height:1.5;border:1px solid;border-radius:4px;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;width:17rem;background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700;font-size:1.25rem;padding:1rem .75rem;} .ds-btn-go:hover,.ds-btn-go:active{background:#000;border-color:#000;} .ds-btn-go:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Reject and Cancel on the sign: present, but plainly secondary to Approve.",
+      "html": "<div class=\"ds-on-sign\"><button class=\"ds-btn-ghost\">Reject plan</button></div>",
+      "css": ".ds-on-sign{background:var(--sign);padding:16px;} .ds-btn-ghost{display:inline-block;font-family:var(--sans);line-height:1.5;border:1px solid;border-radius:4px;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;background:transparent;color:var(--ink);border-color:var(--ink);font-weight:600;font-size:.875rem;padding:.25rem .5rem;} .ds-btn-ghost:hover{background:rgba(0,0,0,.1);} .ds-btn-ghost:active{background:rgba(0,0,0,.18);} .ds-btn-ghost:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Utility actions such as Load row, on white panels.",
+      "html": "<div class=\"ds-on-panel\"><button class=\"ds-btn-quiet\">Load row</button></div>",
+      "css": ".ds-on-panel{background:var(--panel);padding:16px;} .ds-btn-quiet{display:inline-block;font-family:var(--sans);line-height:1.5;border:1px solid;border-radius:4px;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;background:transparent;color:var(--ink);border-color:#8a8d90;font-weight:600;font-size:.875rem;padding:.25rem .5rem;} .ds-btn-quiet:hover{background:var(--ground);border-color:var(--ink);} .ds-btn-quiet:active{background:var(--line);border-color:var(--ink);} .ds-btn-quiet:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Native field on a Terminal Ground fill; the border turns ink on focus.",
+      "html": "<input class=\"ds-input\" value=\"S1 · AA 2229 (TUS to DFW)\" aria-label=\"Disruption\" />",
+      "css": ".ds-input{width:100%;font-family:var(--sans);font-size:1rem;line-height:1.5;padding:.375rem .75rem;background:var(--ground);color:var(--ink);border:1px solid var(--line);border-radius:4px;} .ds-input:focus{border-color:var(--ink);} .ds-input:focus-visible{outline:3px solid var(--ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": "top-bar",
+      "description": "Product name, disruption picker and Run on one black bar.",
+      "html": "<header class=\"ds-bar\"><strong class=\"ds-brand\">Disruption Negotiation Desk</strong><input class=\"ds-pick\" value=\"S1 · AA 2229 (TUS to DFW)\" aria-label=\"Disruption\" /><button class=\"ds-run\">Run negotiation</button></header>",
+      "css": ".ds-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.25rem;background:var(--ink);padding:.75rem var(--gutter);font-family:var(--sans);} .ds-brand{color:var(--sign);font-size:1.125rem;font-weight:700;white-space:nowrap;} .ds-pick{flex:1 1 20rem;min-width:0;font:inherit;line-height:1.5;padding:.375rem .75rem;background:var(--ground);color:var(--ink);border:1px solid var(--line);border-radius:4px;} .ds-run{font:inherit;line-height:1.5;font-weight:700;padding:.375rem 1.5rem;background:var(--sign);color:var(--ink);border:1px solid var(--sign);border-radius:4px;cursor:pointer;} .ds-run:hover{background:#ffe14d;border-color:#ffe14d;} .ds-bar :focus-visible{outline:3px solid var(--sign);outline-offset:2px;}"
+    },
+    {
+      "name": "Terminal Sign",
+      "kind": "custom",
+      "refersTo": "sign",
+      "description": "The signature: gate tile, sign line and tagged subline. The field changes with the decision state.",
+      "html": "<section class=\"ds-sign\"><div class=\"ds-tile\"><span class=\"ds-tile-label\">Gate</span><span class=\"ds-tile-code\">B10</span></div><div><p class=\"ds-sign-title\">Land 16:08</p><p class=\"ds-sign-sub\"><span class=\"ds-tag\">CONSENSUS</span> +20 min, gate B10. Agents agreed and all 5 rules passed.</p></div></section>",
+      "css": ".ds-sign{display:flex;flex-wrap:wrap;gap:1.5rem 2.5rem;align-items:flex-start;background:var(--sign);color:var(--ink);padding:2rem var(--gutter);font-family:var(--sans);} .ds-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;min-width:10rem;min-height:10rem;padding:.75rem 1.25rem;background:var(--ink);color:var(--sign);border-radius:6px;} .ds-tile-label{color:#fff;font-size:.875rem;font-weight:600;} .ds-tile-code{font-family:var(--mono);font-size:3.625rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;font-feature-settings:\"zero\";} .ds-sign-title{margin:0;font-size:4.25rem;font-weight:800;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;} .ds-sign-sub{margin:.75rem 0 0;font-size:1.375rem;font-weight:600;line-height:1.3;} .ds-tag{display:inline-block;margin-right:.375rem;padding:.125rem .5rem;background:var(--ink);color:var(--sign);border-radius:3px;font-family:var(--mono);font-size:.875rem;font-weight:700;vertical-align:.125em;}"
+    },
+    {
+      "name": "Evidence Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "White panel with a black header; the slots table carries a yellow chosen row and gate chips.",
+      "html": "<section class=\"ds-panel\"><h2>Landing slots</h2><table class=\"ds-slots\"><tbody><tr><td>+10</td><td>15:58</td><td class=\"ds-bad\"><svg class=\"ds-i\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6 6 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"square\"/></svg> WAKE</td></tr><tr class=\"ds-chosen\"><td>+20</td><td>16:08</td><td><svg class=\"ds-i\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12.5 9.5 18 20 6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"square\"/></svg> <span class=\"ds-chip\">B10</span> <span class=\"ds-word\">chosen</span></td></tr></tbody></table></section>",
+      "css": ".ds-panel{background:var(--panel);color:var(--ink);border-radius:6px;padding:1.25rem;overflow:hidden;font-family:var(--sans);} .ds-panel h2{display:flex;align-items:center;min-height:3.1875rem;margin:-1.25rem -1.25rem .75rem;padding:0 1.25rem;background:var(--ink);color:#fff;font-size:1.125rem;font-weight:700;} .ds-slots{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:1rem;font-variant-numeric:tabular-nums;font-feature-settings:\"zero\";} .ds-slots td{padding:.75rem .25rem;border-top:1px solid var(--line);} .ds-chosen td{background:var(--sign);font-weight:700;} .ds-bad{color:var(--bad);} .ds-i{display:inline-block;width:1em;height:1em;vertical-align:-.125em;} .ds-chip{display:inline-block;padding:0 .375rem;background:var(--ink);color:var(--sign);border-radius:3px;font-size:.9375rem;font-weight:700;} .ds-word{font-family:var(--sans);font-size:.9375rem;font-weight:700;}"
+    },
+    {
+      "name": "Checker Callout",
+      "kind": "custom",
+      "refersTo": "verdict-pass",
+      "description": "Tinted result from the code checker, set apart from unverified agent text.",
+      "html": "<div class=\"ds-verdict\"><svg class=\"ds-v-i\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12.5 9.5 18 20 6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"square\"/></svg><div><strong>Checker passed</strong> <span class=\"ds-v-mono\">+20 B10</span><div>All rules passed. Verified by code.</div></div></div>",
+      "css": ".ds-verdict{display:flex;gap:.625rem;padding:.625rem .75rem;background:var(--ok-tint);color:var(--ink);border-radius:4px;font-family:var(--sans);font-size:.9375rem;} .ds-v-i{flex:none;width:1.25rem;height:1.25rem;margin-top:.125rem;color:var(--ok);} .ds-v-mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:\"zero\";}"
+    },
+    {
+      "name": "Constraint Timeline",
+      "kind": "custom",
+      "refersTo": "flight-strip",
+      "description": "One axis of delay minutes on the black strip: slots by verdict, the chosen ring and the hatched fuel limit.",
+      "html": "<div class=\"ds-strip\"><div class=\"ds-tl\"><div class=\"ds-fuel\"><span>Fuel limit +55</span></div><div class=\"ds-axis\"></div><span class=\"ds-dot ds-blocked\" style=\"left:12%\"></span><span class=\"ds-dot ds-chosen-dot\" style=\"left:25%\"></span><span class=\"ds-dot ds-safe\" style=\"left:44%\"></span><span class=\"ds-dot ds-safe\" style=\"left:62%\"></span></div></div>",
+      "css": ".ds-strip{background:var(--ink);padding:1rem var(--gutter);} .ds-tl{position:relative;height:6rem;} .ds-axis{position:absolute;left:0;right:0;top:3rem;height:2px;background:#5b6066;} .ds-fuel{position:absolute;top:0;bottom:0;left:70%;right:0;border-left:2px dashed var(--on-ink-bad);background:repeating-linear-gradient(135deg,rgba(255,112,99,.2) 0 6px,transparent 6px 14px);} .ds-fuel span{position:absolute;top:.125rem;left:.5rem;color:var(--on-ink-bad);font-family:var(--mono);font-size:.875rem;white-space:nowrap;} .ds-dot{position:absolute;top:3.0625rem;width:1rem;height:1rem;border-radius:50%;border:3px solid;transform:translate(-50%,-50%);} .ds-safe{border-color:var(--on-ink-ok);background:var(--on-ink-ok);} .ds-blocked{border-color:var(--on-ink-bad);background:var(--ink);} .ds-chosen-dot{border-color:var(--sign);background:var(--sign);box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--sign);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Terminal Sign",
+    "overview": "The decision is a terminal sign, readable from across the room: gate, landing time, verdict. A signage-yellow field and black sign panels sit on a pale neutral ground, the way airport wayfinding sits in a concourse. The top of the screen says one thing at enormous scale, and everything beneath it is the evidence for that one thing.\n\nDensity rises as the eye descends. The sign reads at a glance; the black flight strip plots every constraint on one axis of delay; the white panels carry rule evidence and the negotiation log at reading size; the plain list at the bottom accounts for where each value came from. The controls stay ordinary Bootstrap web controls, recoloured. The character comes from colour fields, scale and heavy type, never from custom control behaviour.\n\nThe system refuses the grey dashboard of metric cards. It also stays honest when the news is bad: when nothing is safe, the same sign turns red and says so at the same size.",
+    "keyCharacteristics": [
+      "Yellow and black carry the identity; green and red only report the result of a check.",
+      "One sign, at the top, holds every decision state and changes in place.",
+      "Hanken Grotesk at weight 800 for sign lines; JetBrains Mono with slashed zero for machine values.",
+      "Flat, full-bleed colour fields with small, firm corners on the objects inside them.",
+      "Standard web controls throughout, restyled through Bootstrap 5.3 variables."
+    ],
+    "rules": [
+      {
+        "name": "The Sign Field Rule",
+        "body": "A yellow fill means the decision, the chosen option, or the one action that starts a run: the sign, the chosen row, the chosen timeline dot and the Run button. Everywhere else yellow is type on black or an interactive state on black or red.",
+        "section": "colors"
+      },
+      {
+        "name": "The Verdict Color Rule",
+        "body": "Green and red report the result of a check: a passed or blocked rule, a safe or blocked slot, an accepted or refused input, or the hard limit a check enforces, such as the hatched fuel limit. They are never decoration, category colour or brand.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Sign Rule",
+        "body": "Decision state is stated once, at sign scale, by changing the sign itself: yellow while waiting, negotiating or holding a plan; red when nothing is safe; white when a plan is rejected. Add to the sign rather than raising a toast or a second banner. The black band announcing a rule-based plan lives inside the sign for this reason.",
+        "section": "colors"
+      },
+      {
+        "name": "The Heavy Sign Rule",
+        "body": "Weight 800 and negative tracking belong to sign-scale lines alone: the sign line, the band and the recorded decision. Nothing below them uses either.",
+        "section": "typography"
+      },
+      {
+        "name": "The Machine Value Rule",
+        "body": "Mono carries values that stand alone as data: gates, offers, rule codes, table times, dates, raw payloads. The sign line, its subline and rule evidence sentences stay in Hanken Grotesk, with tabular numerals on the sign line so a time never jitters.",
+        "section": "typography"
+      },
+      {
+        "name": "The Verbatim Code Rule",
+        "body": "Capitals appear only where the word itself is a system code (CONSENSUS, FALLBACK, ESCALATE, WAKE, FUEL). No text is transformed to uppercase for style; labels stay in sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Field Rule",
+        "body": "Separate surfaces by changing the field colour, not by lifting them. No blur shadows, no offset shadows, no glass.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do state a new decision state by changing the sign, at Display scale, in place.",
+      "Do put the gate in a black tile or chip with a yellow mono code wherever it stands alone.",
+      "Do use Signal Green and Signal Red on black, and Verdict Green and Verdict Red on light surfaces.",
+      "Do switch to ink ticks on a yellow row, keeping the tick or cross as the verdict signal.",
+      "Do pair verdict colour with a tick, a cross or a rule code, so colour is never the only signal.",
+      "Do style controls through Bootstrap 5.3 variables and keep them standard web controls.",
+      "Do keep agent text labelled unverified and visually apart from tinted checker output.",
+      "Do switch off the sign wipe, field fade, waiting pulse and skeleton pulse under `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "Don't answer the decision with a row of grey metric cards; say it on the sign.",
+      "Don't fill a surface yellow unless it is the sign, the chosen option or the Run action.",
+      "Don't use green or red for anything other than the result of a check or the hard limit a check enforces.",
+      "Don't use weight 800 or negative tracking below sign scale.",
+      "Don't transform text to uppercase for style; capitals are for literal system codes.",
+      "Don't lift surfaces with blur or offset shadows; change the field colour instead.",
+      "Don't replace Hanken Grotesk or JetBrains Mono; both are user-pinned.",
+      "Don't soften the red sign into a tinted notice; refusal gets the same scale as a plan."
+    ]
+  }
+}

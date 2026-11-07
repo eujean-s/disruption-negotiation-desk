@@ -11,7 +11,7 @@
 
 AUTONOMOUS SG 2026 · AI & Aerospace · Airbus Challenge #2 · **Live demo: https://agents-app-sandy.vercel.app**
 
-![Screenshot: S1 negotiated to +20 min at gate B10 in one round, every rule checked](docs/screenshot.png)
+![Screenshot: the terminal sign showing S1 negotiated to land at 16:08 at gate B10 in one round, with every rule checked](docs/screenshot.png)
 
 **The problem.** When weather or a late aircraft disrupts an arrival, the airline's **hub operations duty manager** has to get three parties to agree on a new landing time and gate: **ATC** (runway slots, wake separation), the **flight crew** (fuel, duty hours) and **ground ops** (gates). Today that happens by phone, one party at a time. Each call can surface a new constraint and restart the loop, while the aircraft holds at about **$100.76 per minute** ([A4A, 2024](https://airlines.org/dataset/u-s-passenger-carrier-delay-costs/)).
 
@@ -19,7 +19,7 @@ AUTONOMOUS SG 2026 · AI & Aerospace · Airbus Challenge #2 · **Live demo: http
 
 ## Core features
 
-- **Three independent agents, one message each per round.** ATC, pilot and ground ops are separate model calls with separate prompts and separate facts (the "what ATC saw" fold-out shows exactly what each was given). Consensus within 3 rounds, otherwise a deterministic fallback decides and the log says why.
+- **Three independent agents, one message each per round.** ATC, pilot and ground ops are separate model calls with separate prompts and separate facts (the "What this agent saw" fold-out shows exactly what each was given). Consensus within 3 rounds, otherwise a deterministic fallback decides and the log says why.
 - **A safety checker the AI cannot talk its way past.** Every agreement is tested against five rules (**SLOT, WAKE, FUEL, GATE, CREW**) with the numbers shown, e.g. `✓ FUEL 20 min delay vs 55 min usable holding`. Agent text is labelled *unverified*, checker output *verified by code*.
 - **Constraint timeline.** Every offered landing slot on one axis: safe (green) or blocked (red, with the rule), plus the fuel limit, gate-ready times and heavy traffic. You see why the plan was chosen before reading a word of agent chat.
 - **Any real flight, not a canned demo.** Pick one of 8 curated scenarios or paste **any row of the organisers' `flights.csv`**; plain code builds the scenario from the row plus the organisers' constraints workbook.
@@ -73,7 +73,7 @@ Read the caveats in [Evaluation](#evaluation) and [Impact](#impact) before quoti
 | Building a scenario from any CSV row | plain code | `src/scenarioFromRow.js` |
 | Final decision | **human** | Approve / Reject / take over |
 
-**Stack:** Vue 3 + Vite + Bootstrap 5.3 (custom dark theme, Hanken Grotesk / JetBrains Mono) · one Vercel serverless function · Anthropic Claude via `@anthropic-ai/sdk` · no database (scenarios are JSON; the log is a client-side download).
+**Stack:** Vue 3 + Vite + Bootstrap 5.3 (custom signage theme, Hanken Grotesk / JetBrains Mono; see `DESIGN.md`) · one Vercel serverless function · Anthropic Claude via `@anthropic-ai/sdk` · no database (scenarios are JSON; the log is a client-side download).
 
 **Security:** `/api/agent` never accepts prompt text. The browser sends only a role, a scenario reference and the negotiation so far; the server rebuilds the scenario, sanitises the history and recomputes every checker verdict before building the prompt. So the endpoint is not a general Claude proxy and verdicts cannot be forged. Model and `max_tokens` (300) are fixed server-side. There is no rate limit, so set a spending limit on the API key.
 
