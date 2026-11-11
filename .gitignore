@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .vercel
 .env
+# Local design-tool working files (kept on disk, not in the repo)
+pnpm-lock.yaml
+.impeccable/*
+!.impeccable/design.json
+!.impeccable/surfaces/
