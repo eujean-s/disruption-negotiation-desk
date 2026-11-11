@@ -9,7 +9,7 @@ Three AI agents (ATC, pilot and ground ops) negotiate a new landing time and gat
 ![Claude](https://img.shields.io/badge/Anthropic-Claude-d97757)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue)
 
-I built this solo for AUTONOMOUS SG 2026 (AI & Aerospace track, Airbus Challenge #2). Live demo: https://agents-app-sandy.vercel.app
+I built this solo for AUTONOMOUS SG 2026 (AI & Aerospace track, Airbus Challenge #2). Live demo: https://disruption-negotiation-desk.vercel.app
 
 ![Screenshot: the terminal sign showing S1 negotiated to land at 16:08 at gate B10 in one round, with every rule checked](docs/screenshot.png)
 
